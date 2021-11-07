@@ -36,7 +36,7 @@ wire negative_flag;
 
 always@(posedge clock)
 begin
-	if (!reset) // active low reset
+	if (!reset) begin // active low reset
 		// reset input indicies
 		write_addr_out <= 4'b0;
 		idx_out <= 4'b0;
@@ -44,30 +44,30 @@ begin
 		weight <= 1'b0;
 		// reset data to 0 (negative)
 		data_out <= 1'b0;
-	else
-		if (go)
+	end else begin
+		if (go) begin
 			// start passing values every clockcycle
 			data_out <= data_in;
-			if (pipeline_idx_enable)
+			if (pipeline_idx_enable) begin
 				// pass index forward
 				write_addr_out <= write_addr_in;
 				idx_out <= idx_in;
-			else
+			end else begin
 				// otherwise retain index
 				write_addr_out <= write_addr_out;
 				idx_out <= idx_out;
 			end
-		else
+		end else begin
 			// otherwise retain values
 			data_out <= data_out;
 			write_addr_out <= write_addr_out;
 			idx_out <= idx_out;
 		end
 		
-		if (load_weight)
+		if (load_weight) begin
 			// load weight
 			weight <= weight_in;
-		else
+		end else begin
 			// retain weight
 			weight <= weight;
 		end

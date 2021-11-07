@@ -196,13 +196,13 @@ wire col_prep_oob;
 
 // Moore machine, sequential logic
 always@(posedge clock or negedge reset)
-	if (!reset)
+	if (!reset) begin
 		current_state <= S0;
 		
 		// done flags set low
 		s2_done <= low;
 		s3_done <= low;
-	else
+	end else begin
 		// next state
 		current_state <= next_state;
 		
@@ -239,11 +239,11 @@ begin
 		// begin state, look for when to run
 		S0: begin
 			// check if top module wants us to run
-			if (dut_run)
+			if (dut_run) begin
 				dut_busy = high;
 				// next state
 				next_state = S1;
-			else
+			end else begin
 				dut_busy = low;
 				// retain state
 				next_state = S0;
@@ -400,21 +400,21 @@ begin
 			d12 = input_r1[cidx_counter];
 			d22 = input_r2[cidx_counter];
 			
-			if (~loaded_for_sweep)
-				if (cidx_counter == weight_dims)
+			if (~loaded_for_sweep) begin
+				if (cidx_counter == weight_dims) begin
 					// set high
 					loaded_for_sweep = high;
 					// ripple done flag through adders
 					s1_done = high;
 					s1_waddr = output_write_addr;
-				else
+				end else begin
 					// stay low
 					loaded_for_sweep = loaded_for_sweep;
 					// not done
 					s1_done = low;
 					s1_waddr = initial_addr;
 				end
-			else
+			end else begin
 				// stay high
 				loaded_for_sweep = high;
 				// ripple done flag through adders
@@ -424,20 +424,20 @@ begin
 			
 			// if NEXT clock cycle past dims, request to load new row
 			// otherwise loop in this state
-			if (col_prep_oob)
-				if (~last_row_flag)
+			if (col_prep_oob) begin
+				if (~last_row_flag) begin
 					// increment current input address
 					// load in NEXT row of input
 					current_input_addr = current_input_addr + incr12;
 					dut_sram_read_address = current_input_addr;
-				else
+				end else begin
 					// stays the same
 					current_input_addr = current_input_addr;
 					dut_sram_read_address = dut_sram_read_address;
 				end
 				// next state
 				next_state = S9;
-			else
+			end else begin
 				// next state
 				next_state = S8;
 			end
@@ -452,7 +452,7 @@ begin
 			d12 = input_r1[cidx_counter];
 			d22 = input_r2[cidx_counter];
 			
-			if (~last_row_flag)
+			if (~last_row_flag) begin
 				// propagate rows upward
 				input_r0 = input_r1;
 				input_r1 = input_r2;
@@ -474,7 +474,7 @@ begin
 				
 				// go back to sweeping
 				next_state = S7;
-			else
+			end else begin
 				// stays the same
 				input_r0 = input_r0;
 				input_r1 = input_r1;
@@ -511,19 +511,19 @@ end
 
 always@(*) //?
 begin
-	if (s3_done)
+	if (s3_done) begin
 		// add to output for storing
 		output_row_temp[c00_out] = ~negative_flag;
 		// retain these values
 		set_stored_flag = set_stored_flag;
 		dut_sram_write_enable = dut_sram_write_enable;
-	else
-		if (stored_flag)
+	end else begin
+		if (stored_flag) begin
 			// if stored, reset all
 			output_row_temp = counter_init;
 			set_stored_flag = low;
 			dut_sram_write_enable = low;
-		else
+		end else begin
 			// otherwise retain values
 			output_row_temp = output_row_temp;
 			set_stored_flag = set_stored_flag;
