@@ -25,14 +25,13 @@ input pipeline_idx_enable;
 input [11:0] write_addr_in;
 input [3:0] idx_in;
 
-output data_out;
-output [11:0] write_addr_out;
-output [3:0] idx_out;
+output reg data_out;
+output reg [11:0] write_addr_out;
+output reg [3:0] idx_out;
 
-output negative_flag;
+output wire negative_flag;
 
 reg weight;
-wire negative_flag;
 
 always@(posedge clock)
 begin
