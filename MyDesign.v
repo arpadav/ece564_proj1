@@ -66,17 +66,17 @@ parameter [2:0]
 	S1 = 4'b0001,
 	S2 = 4'b0010,
 	S3 = 4'b0011,
-	S4 = 4'b0100;
-	S5 = 4'b0101;
-	S6 = 4'b0110;
-	S7 = 4'b0111;
+	S4 = 4'b0100,
+	S5 = 4'b0101,
+	S6 = 4'b0110,
+	S7 = 4'b0111,
 	S8 = 4'b1000,
 	S9 = 4'b1001,
 	SA = 4'b1010,
 	SB = 4'b1011,
-	SC = 4'b1100;
-	SD = 4'b1101;
-	SE = 4'b1110;
+	SC = 4'b1100,
+	SD = 4'b1101,
+	SE = 4'b1110,
 	SF = 4'b1111;
 
 // REGISTERS
@@ -122,11 +122,17 @@ reg load_weights;
 // setting stored flag
 reg stored_flag;
 reg set_stored_flag;
+reg loaded_for_sweep;
 
 // weights (kernel limited to 3x3, so hardcoding)
 reg w02, w01, w00;
 reg w12, w11, w10;
 reg w22, w21, w20;
+
+// input data
+reg d02;
+reg d12;
+reg d22;
 
 // stage 1 index and done flag
 reg s1_waddr;
@@ -194,9 +200,12 @@ wire last_row_flag;
 wire col_prep_oob;
 // wire last_col_flag;
 
+// wire used to store output data
+wire negative_flag;
+
 // Moore machine, sequential logic
-always@(posedge clock or negedge reset)
-	if (!reset) begin
+always@(posedge clk or negedge reset_b)
+	if (!reset_b) begin
 		current_state <= S0;
 		
 		// done flags set low
@@ -415,11 +424,11 @@ begin
 					s1_waddr = initial_addr;
 				end
 			end else begin
-				// stay high
-				loaded_for_sweep = high;
-				// ripple done flag through adders
-				s1_done = high;
-				s1_waddr = output_write_addr;
+				// stay low
+				loaded_for_sweep = low;
+				// keep same
+				s1_done = s1_done;
+				s1_waddr = s1_waddr;
 			end
 			
 			// if NEXT clock cycle past dims, request to load new row
