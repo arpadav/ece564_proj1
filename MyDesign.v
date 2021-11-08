@@ -14,25 +14,25 @@ module MyDesign (	dut_run,
 // if 1, do convolution
 input dut_run;
 // set to 1 if calculating, 0 once done and stored
-output dut_busy;
+output reg dut_busy;
 // reset and clock
 input reset_b;
 input clk;
 
 // dut -> sram (input)
-output [11:0] dut_sram_read_address;
+output reg [11:0] dut_sram_read_address;
 // sram -> dut (input)
 input [15:0] sram_dut_read_data;
 
 // dut -> sram (weights)
-output [11:0] dut_wmem_read_address;
+output reg [11:0] dut_wmem_read_address;
 // sram -> dut (weights)
 input [15:0] wmem_dut_read_data;
 
 // dut -> sram (output)
-output [11:0] dut_sram_write_address;
-output [15:0] dut_sram_write_data;
-output dut_sram_write_enable;
+output reg [11:0] dut_sram_write_address;
+output reg [15:0] dut_sram_write_data;
+output reg dut_sram_write_enable;
 
 // high and low, used for flags and whatnot
 parameter high = 1'b1;
@@ -61,7 +61,7 @@ parameter incr2 = 2'b01;
 parameter word_size = 16'h10;
 
 // states
-parameter [2:0]
+parameter [3:0]
 	S0 = 4'b0000,
 	S1 = 4'b0001,
 	S2 = 4'b0010,
@@ -166,14 +166,14 @@ wire d12_out, d11_out, d10_out;
 wire d22_out, d21_out, d20_out;
 
 // pipelined write address
-wire waddr02_out, waddr01_out, waddr00_out;
-wire waddr12_out, waddr11_out, waddr10_out;
-wire waddr22_out, waddr21_out, waddr20_out;
+wire [11:0] waddr02_out, waddr01_out, waddr00_out;
+wire [11:0] waddr12_out, waddr11_out, waddr10_out;
+wire [11:0] waddr22_out, waddr21_out, waddr20_out;
 
 // pipelined column indicies
-wire c02_out, c01_out, c00_out;
-wire c12_out, c11_out, c10_out;
-wire c22_out, c21_out, c20_out;
+wire [3:0] c02_out, c01_out, c00_out;
+wire [3:0] c12_out, c11_out, c10_out;
+wire [3:0] c22_out, c21_out, c20_out;
 
 // negative flags (outputs to be summed)
 wire n02, n01, n00;
@@ -206,7 +206,11 @@ wire negative_flag;
 // Moore machine, sequential logic
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) begin
+		// go to state 0
 		current_state <= S0;
+		
+		// dut not busy
+		dut_busy <= low;
 		
 		// done flags set low
 		s2_done <= low;
@@ -392,9 +396,9 @@ begin
 			s1_done = low;
 				
 			// load in data to convolution modules
-			d02 = input_r0[cidx_counter];
-			d12 = input_r1[cidx_counter];
-			d22 = input_r2[cidx_counter];
+			d02 = input_r0[cidx_counter[3:0]];
+			d12 = input_r1[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];
 			
 			// next state
 			next_state = S8;
@@ -405,9 +409,9 @@ begin
 			cidx_counter = cidx_counter + incr16;
 			
 			// load in data to convolution modules
-			d02 = input_r0[cidx_counter];
-			d12 = input_r1[cidx_counter];
-			d22 = input_r2[cidx_counter];
+			d02 = input_r0[cidx_counter[3:0]];
+			d12 = input_r1[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];
 			
 			if (~loaded_for_sweep) begin
 				if (cidx_counter == weight_dims) begin
@@ -457,9 +461,9 @@ begin
 			cidx_counter = cidx_counter + incr16;
 			
 			// load in data to convolution modules
-			d02 = input_r0[cidx_counter];
-			d12 = input_r1[cidx_counter];
-			d22 = input_r2[cidx_counter];
+			d02 = input_r0[cidx_counter[3:0]];
+			d12 = input_r1[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];
 			
 			if (~last_row_flag) begin
 				// propagate rows upward
