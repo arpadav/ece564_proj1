@@ -15,6 +15,8 @@ module MyDesign (	dut_run,
 input dut_run;
 // set to 1 if calculating, 0 once done and stored
 output reg dut_busy;
+reg set_dut_busy;
+
 // reset and clock
 input reset_b;
 input clk;
@@ -43,20 +45,18 @@ parameter top_pipeline_idx = 1'b1;
 parameter rest_pipeline_idx = 1'b0;
 
 // since weights is limited to 3x3, ONLY second address needed for weights
-parameter weights_dims_addr = 12'h1;
-parameter weights_data_addr = 12'h2;
+parameter weights_dims_addr = 12'h0;
+parameter weights_data_addr = 12'h1;
 
 // initial address (0)
 parameter initial_addr = 12'h0;
-// increment address by this much
-parameter incr12 = 12'h1;
+
+// increment everything by this much
+parameter incr = 1'b1;
 
 // initial counter
 parameter counter_init = 16'h0;
-parameter wd_counter_init = 2'b0;
-// increment/decrement counter by this much
-parameter incr16 = 16'h1;
-parameter incr2 = 2'b01;
+
 // data size
 parameter word_size = 16'h10;
 
@@ -108,10 +108,13 @@ reg [15:0] input_r2;
 // row and column counter
 reg [15:0] ridx_counter;
 reg [15:0] cidx_counter;
-reg [1:0] weight_dim_counter;
+//reg [1:0] weight_dim_counter;
 
 // output to store
 reg [15:0] output_row_temp;
+// reg [15:0] output_row_temp1;
+// reg [15:0] output_row_temp2;
+// reg output_row_temp1_flag;
 
 // flag to tell each convolution module to pass through data
 reg conv_go;
@@ -135,16 +138,23 @@ reg d12;
 reg d22;
 
 // stage 1 index and done flag
-reg s1_waddr;
 reg s1_done;
+reg [3:0] s1_idx;
+reg set_s1_done;
+reg [11:0] s1_waddr;
+// reg [3:0] set_s1_idx;
+reg [11:0] set_s1_waddr;
 
 // stage 2 index and done flag
-reg s2_waddr;
 reg s2_done;
+reg [3:0] s2_idx;
+reg [11:0] s2_waddr;
 
 // stage 3 index and done flag
-reg s3_waddr;
 reg s3_done;
+reg prev_s3_done;
+reg [3:0] s3_idx;
+reg [11:0] s3_waddr;
 
 // stage 2 full adder inputs
 reg FA1_s2_in1;
@@ -158,6 +168,9 @@ reg FA2_s2_in3;
 reg ones;
 reg twos1, twos2;
 reg fours;
+
+// DEBUGGING
+reg debug;
 
 // WIRES
 // pipelined data
@@ -200,6 +213,9 @@ wire last_row_flag;
 wire col_prep_oob;
 // wire last_col_flag;
 
+// used in storing for output
+wire max_col_idx;
+
 // wire used to store output data
 wire negative_flag;
 
@@ -213,11 +229,24 @@ always@(posedge clk or negedge reset_b)
 		dut_busy <= low;
 		
 		// done flags set low
+		s1_done <= low;
 		s2_done <= low;
 		s3_done <= low;
+		prev_s3_done <= low;
+		
+		// output temp
+		output_row_temp <= counter_init;
+		// output_row_temp1 <= counter_init;
+		// output_row_temp2 <= counter_init;
+		// output_row_temp1_flag <= high;
 	end else begin
 		// next state
 		current_state <= next_state;
+		
+		// storage registers stage 0 -> 1
+		// s1_done <= set_s1_done;
+		// s1_idx <= c00_out;
+		// s1_waddr <= set_s1_waddr;
 		
 		// FA stage 1 -> 2
 		FA1_s2_in1 <= FA1_s1_ones;
@@ -228,8 +257,12 @@ always@(posedge clk or negedge reset_b)
 		FA2_s2_in3 <= FA3_s1_twos;
 		
 		// storage registers stage 1 -> 2
-		s2_waddr <= s1_waddr;
-		s2_done <= s1_done;
+		// s2_done <= s1_done; // s1_done
+		// s2_idx <= s1_idx; // s1_idx
+		// s2_waddr <= s1_waddr; // s1_waddr
+		s2_done <= set_s1_done; // s1_done
+		s2_idx <= c00_out; // s1_idx
+		s2_waddr <= set_s1_waddr; // s1_waddr
 				
 		// FA stage 2 -> 3
 		ones <= FA1_s2_ones;
@@ -238,29 +271,37 @@ always@(posedge clk or negedge reset_b)
 		fours <= FA2_s2_fours;
 		
 		// storage registers stage 2 -> 3
-		s3_waddr <= s2_waddr;
 		s3_done <= s2_done;
+		prev_s3_done <= s3_done;
+		s3_idx <= s2_idx;
+		s3_waddr <= s2_waddr;
 		
 		// output stored flag
 		stored_flag <= set_stored_flag;
+		
+		// dut busy reg
+		dut_busy <= set_dut_busy;
 	end
 
 // bruh
-always@(current_state or dut_run)
+always@(current_state or dut_run) //
 begin
 	case(current_state)
 		// begin state, look for when to run
 		S0: begin
 			// check if top module wants us to run
 			if (dut_run) begin
-				dut_busy = high;
+				set_dut_busy = high;
 				// next state
 				next_state = S1;
 			end else begin
-				dut_busy = low;
+				set_dut_busy = low;
 				// retain state
 				next_state = S0;
 			end
+			
+			// debug
+			debug = low;
 			
 			// keep address at 0
 			current_input_addr = initial_addr;
@@ -269,9 +310,12 @@ begin
 			// do not do convolution
 			conv_go = low;
 			
+			// values not fully rippled down
+			loaded_for_sweep = low;
+			
 			// reset adder ripple 
-			s1_done = low;
-			s1_waddr = initial_addr;
+			set_s1_done = low;
+			set_s1_waddr = initial_addr;
 			set_stored_flag = low;
 				
 			// do not load weights
@@ -280,7 +324,6 @@ begin
 			// set counters to 0
 			ridx_counter = counter_init;
 			cidx_counter = counter_init;
-			weight_dim_counter = wd_counter_init;
 		end
 		
 		S1: begin
@@ -296,17 +339,17 @@ begin
 		
 		S2: begin
 			// store weights dimensions
-			weight_dims = wmem_dut_read_data - incr16;
+			weight_dims = wmem_dut_read_data - incr;
 			
 			// store input dimension 1 (rows)
-			input_num_rows = sram_dut_read_data - incr16;
+			input_num_rows = sram_dut_read_data - incr;
 			
 			// load in weights data
 			dut_wmem_read_address = weights_data_addr;
 			
 			// increment current input address
 			// load in input dimension 2 (columns)
-			current_input_addr = current_input_addr + incr12;
+			current_input_addr = current_input_addr + incr;
 			dut_sram_read_address = current_input_addr;
 			
 			// next state
@@ -318,11 +361,11 @@ begin
 			weight_data = wmem_dut_read_data;
 			
 			// store input dimension 2 (cols)
-			input_num_cols = sram_dut_read_data - incr16;
+			input_num_cols = sram_dut_read_data - incr;
 			
 			// increment current input address
 			// load in FIRST row of input
-			current_input_addr = current_input_addr + incr12;
+			current_input_addr = current_input_addr + incr;
 			dut_sram_read_address = current_input_addr;
 		
 			// next state
@@ -331,7 +374,7 @@ begin
 		
 		S4: begin
 			// set row counter to weight dim - 1
-			ridx_counter = weight_dims - incr16;
+			ridx_counter = weight_dims - incr;
 			
 			// (kernel limited to 3x3, so hardcoding)
 			w00 = weight_data[0];
@@ -352,7 +395,7 @@ begin
 			
 			// increment current input address
 			// load in SECOND row of input
-			current_input_addr = current_input_addr + incr12;
+			current_input_addr = current_input_addr + incr;
 			dut_sram_read_address = current_input_addr;
 			
 			// next state
@@ -368,7 +411,7 @@ begin
 			
 			// increment current input address
 			// load in THIRD row of input
-			current_input_addr = current_input_addr + incr12;
+			current_input_addr = current_input_addr + incr;
 			dut_sram_read_address = current_input_addr;
 			
 			// next state
@@ -378,9 +421,6 @@ begin
 		S6: begin
 			// store THIRD row of input
 			input_r2 = sram_dut_read_data;
-			
-			// start convolution to pass down data
-			conv_go = high;
 			
 			// next state
 			next_state = S7;
@@ -392,21 +432,27 @@ begin
 			// set column to 0
 			cidx_counter = counter_init;
 			
-			// done flag low
-			s1_done = low;
+			// // done flag low
+			// set_s1_done = low;
 				
 			// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
 			d12 = input_r1[cidx_counter[3:0]];
 			d22 = input_r2[cidx_counter[3:0]];
 			
+			// start convolution to pass down data
+			conv_go = high;
+			
 			// next state
 			next_state = S8;
 		end
 		
 		S8: begin
+			// debug oscillate
+			debug = ~debug;
+		
 			// increment counter
-			cidx_counter = cidx_counter + incr16;
+			cidx_counter = cidx_counter + incr;
 			
 			// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
@@ -417,22 +463,26 @@ begin
 				if (cidx_counter == weight_dims) begin
 					// set high
 					loaded_for_sweep = high;
-					// ripple done flag through adders
-					s1_done = high;
-					s1_waddr = output_write_addr;
 				end else begin
 					// stay low
 					loaded_for_sweep = loaded_for_sweep;
+				end
+				
+				if (cidx_counter == weight_dims - incr) begin
+					// ripple done flag through adders
+					set_s1_done = high;
+					set_s1_waddr = output_write_addr;
+				end else begin
 					// not done
-					s1_done = low;
-					s1_waddr = initial_addr;
+					set_s1_done = set_s1_done;
+					set_s1_waddr = set_s1_waddr;
 				end
 			end else begin
 				// stay low
 				loaded_for_sweep = low;
 				// keep same
-				s1_done = s1_done;
-				s1_waddr = s1_waddr;
+				set_s1_done = set_s1_done;
+				set_s1_waddr = set_s1_waddr;
 			end
 			
 			// if NEXT clock cycle past dims, request to load new row
@@ -441,7 +491,66 @@ begin
 				if (~last_row_flag) begin
 					// increment current input address
 					// load in NEXT row of input
-					current_input_addr = current_input_addr + incr12;
+					current_input_addr = current_input_addr + incr;
+					dut_sram_read_address = current_input_addr;
+				end else begin
+					// stays the same
+					current_input_addr = current_input_addr;
+					dut_sram_read_address = dut_sram_read_address;
+				end
+				// next state
+				next_state = S9;
+			end else begin
+				// next state
+				next_state = SB;
+			end
+		end
+		
+		SB: begin
+			// debug oscillate
+			debug = ~debug;
+		
+			// increment counter
+			cidx_counter = cidx_counter + incr;
+			
+			// load in data to convolution modules
+			d02 = input_r0[cidx_counter[3:0]];
+			d12 = input_r1[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];
+			
+			if (~loaded_for_sweep) begin
+				if (cidx_counter == weight_dims) begin
+					// set high
+					loaded_for_sweep = high;
+				end else begin
+					// stay low
+					loaded_for_sweep = loaded_for_sweep;
+				end
+				
+				if (cidx_counter == weight_dims - incr) begin
+					// ripple done flag through adders
+					set_s1_done = high;
+					set_s1_waddr = output_write_addr;
+				end else begin
+					// not done
+					set_s1_done = set_s1_done;
+					set_s1_waddr = set_s1_waddr;
+				end
+			end else begin
+				// stay low
+				loaded_for_sweep = low;
+				// keep same
+				set_s1_done = set_s1_done;
+				set_s1_waddr = set_s1_waddr;
+			end
+			
+			// if NEXT clock cycle past dims, request to load new row
+			// otherwise loop in this state
+			if (col_prep_oob) begin
+				if (~last_row_flag) begin
+					// increment current input address
+					// load in NEXT row of input
+					current_input_addr = current_input_addr + incr;
 					dut_sram_read_address = current_input_addr;
 				end else begin
 					// stays the same
@@ -458,12 +567,16 @@ begin
 		
 		S9: begin
 			// increment counter
-			cidx_counter = cidx_counter + incr16;
+			cidx_counter = cidx_counter + incr;
 			
 			// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
 			d12 = input_r1[cidx_counter[3:0]];
 			d22 = input_r2[cidx_counter[3:0]];
+			
+			// stop rippling done flag
+			set_s1_done = low;
+			set_s1_waddr = initial_addr;
 			
 			if (~last_row_flag) begin
 				// propagate rows upward
@@ -473,14 +586,16 @@ begin
 				input_r2 = sram_dut_read_data;
 				
 				// increase row counter
-				ridx_counter = ridx_counter + incr16;
+				ridx_counter = ridx_counter + incr;
 				
 				// increase write address
-				output_write_addr = output_write_addr + incr12;
+				output_write_addr = output_write_addr + incr;
 				
-				// done flag still high for this clock cycle
-				s1_done = high;
-				s1_waddr = output_write_addr;
+				/* // done flag still high for this clock cycle
+				// set_s1_done = high;
+				// set_s1_waddr = output_write_addr;
+				set_s1_done = set_s1_done;
+				set_s1_waddr = set_s1_waddr; */
 				
 				// convolution passing data
 				conv_go = high;
@@ -494,9 +609,9 @@ begin
 				input_r2 = input_r2;
 				output_write_addr = output_write_addr;
 				
-				// stop rippling done flag
-				s1_done = low;
-				s1_waddr = initial_addr;
+				/* // stop rippling done flag
+				set_s1_done = low;
+				set_s1_waddr = initial_addr; */
 				
 				// stop convolution passing data, only left for adders to finish rippling
 				conv_go = low;
@@ -513,7 +628,7 @@ begin
 			// check s3_done, keep looping if high
 			
 			// otherwise set dut_busy to 0 and go back to state 0
-			dut_busy = low;
+			set_dut_busy = low;
 			// next state
 			next_state = S0;
 		end
@@ -525,40 +640,106 @@ end
 always@(*) //?
 begin
 	if (s3_done) begin
-		// add to output for storing
-		output_row_temp[c00_out] = ~negative_flag;
+		// // add to output for storing
+		// output_row_temp[s3_idx] = ~negative_flag;
+		if (s3_idx > max_col_idx[3:0]) begin
+			output_row_temp = output_row_temp;
+		end else begin
+			// add to output for storing
+			output_row_temp[s3_idx] = ~negative_flag;
+		end
+		// if (output_row_temp1_flag) begin
+			// output_row_temp1[s3_idx] = ~negative_flag;
+			// output_row_temp2 = output_row_temp2;
+		// end else begin
+			// output_row_temp1 = output_row_temp1;
+			// output_row_temp2[s3_idx] = ~negative_flag;
+		// end
+	end else begin
+		output_row_temp = output_row_temp;
+		// output_row_temp1 = output_row_temp1;
+		// output_row_temp2 = output_row_temp2;
+	end
+	
+	if (prev_s3_done) begin //s3_done
+		// // add to output for storing
+		// output_row_temp[s3_idx] = ~negative_flag;
 		// retain these values
+		output_row_temp = output_row_temp;
+		// output_row_temp1 = output_row_temp1;
+		// output_row_temp2 = output_row_temp2;
+		
 		set_stored_flag = set_stored_flag;
 		dut_sram_write_enable = dut_sram_write_enable;
 	end else begin
 		if (stored_flag) begin
+			// flip storage array
+			// output_row_temp1_flag = ~output_row_temp1_flag; 
+			
 			// if stored, reset all
+			// if (output_row_temp1_flag) begin
+				// output_row_temp1 = counter_init;
+				// output_row_temp2 = output_row_temp2;
+			// end else begin
+				// output_row_temp1 = output_row_temp1;
+				// output_row_temp2 = counter_init;
+			// end
 			output_row_temp = counter_init;
+			
 			set_stored_flag = low;
 			dut_sram_write_enable = low;
 		end else begin
+			// retain flag value
+			// output_row_temp1_flag = output_row_temp1_flag;
+			
 			// otherwise retain values
+			
 			output_row_temp = output_row_temp;
+			// output_row_temp1 = output_row_temp1;
+			// output_row_temp2 = output_row_temp2;
+			
 			set_stored_flag = set_stored_flag;
 			dut_sram_write_enable = dut_sram_write_enable;
 		end
 	end
+	
+	if (~s3_done & prev_s3_done) begin
+		dut_sram_write_enable = high;
+		dut_sram_write_address = s3_waddr;
+		
+		// if (output_row_temp1_flag) begin
+			// dut_sram_write_data = output_row_temp1;
+		// end else begin
+			// dut_sram_write_data = output_row_temp2;
+		// end
+		
+		dut_sram_write_data = output_row_temp;
+		set_stored_flag = high;
+	end else begin
+		dut_sram_write_enable = dut_sram_write_enable;
+		dut_sram_write_address = dut_sram_write_address;
+		dut_sram_write_data = dut_sram_write_data;
+		set_stored_flag = set_stored_flag;
+	end
 end
 
-// when last output goes on negative edge, calculation/storing finished
+/* // when last output goes on negative edge, calculation/storing finished
 always@(negedge s3_done)
 begin
 	dut_sram_write_enable = high;
 	dut_sram_write_address = s3_waddr;
 	dut_sram_write_data = output_row_temp;
 	set_stored_flag = high;
-end
+end */
 
 // row and column out-of-bounds flags
 // assign row_prep_oob = (ridx_counter == input_num_rows);
-assign last_row_flag = ((ridx_counter + incr16) == input_num_rows);
+assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
 assign col_prep_oob = (cidx_counter == input_num_cols);
-// assign last_col_flag = ((cidx_counter + incr16) == input_num_cols);
+// assign last_col_flag = ((cidx_counter + incr) == input_num_cols);
+
+// max index to be stored for convolution
+assign max_col_idx = input_num_cols - weight_dims;
 
 // negative flag of currently rippled value
 assign negative_flag = (ones & twos1 & twos2) | ((ones | twos1 | twos2) & fours);
