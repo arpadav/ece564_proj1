@@ -659,11 +659,13 @@ begin
 			if (s3_done) begin
 				// keep the same
 				current_input_addr = current_input_addr;
+				output_write_addr = output_write_addr;
 				// next state
 				next_state = SA;
 			end else begin
 				// increment input address for next dimension
 				current_input_addr = current_input_addr + incr;
+				output_write_addr = output_write_addr + incr;
 				// next state
 				next_state = S1;
 			end
