@@ -60,6 +60,9 @@ parameter counter_init = 16'h0;
 // data size
 parameter word_size = 16'h10;
 
+// end condition
+parameter end_condition = 16'h00FF;
+
 // states
 parameter [3:0]
 	S0 = 4'b0000,
@@ -214,7 +217,7 @@ wire col_prep_oob;
 // wire last_col_flag;
 
 // used in storing for output
-wire max_col_idx;
+wire [15:0] max_col_idx;
 
 // wire used to store output data
 wire negative_flag;
@@ -352,8 +355,16 @@ begin
 			current_input_addr = current_input_addr + incr;
 			dut_sram_read_address = current_input_addr;
 			
-			// next state
-			next_state = S3;
+			if (sram_dut_read_data == end_condition) begin
+				// done
+				// otherwise set dut_busy to 0 and go back to state 0
+				set_dut_busy = low;
+				// next state
+				next_state = S0;
+			end else begin
+				// next state
+				next_state = S3;
+			end
 		end
 		
 		S3: begin
@@ -576,7 +587,7 @@ begin
 			
 			// stop rippling done flag
 			set_s1_done = low;
-			set_s1_waddr = initial_addr;
+			// set_s1_waddr = initial_addr;
 			
 			if (~last_row_flag) begin
 				// propagate rows upward
@@ -626,11 +637,21 @@ begin
 		
 		SA: begin
 			// check s3_done, keep looping if high
-			
-			// otherwise set dut_busy to 0 and go back to state 0
+			if (s3_done) begin
+				// keep the same
+				current_input_addr = current_input_addr;
+				// next state
+				next_state = SA;
+			end else begin
+				// increment input address for next dimension
+				current_input_addr = current_input_addr + incr;
+				// next state
+				next_state = S1;
+			end
+			/* // otherwise set dut_busy to 0 and go back to state 0
 			set_dut_busy = low;
 			// next state
-			next_state = S0;
+			next_state = S0; */
 		end
 		
 		default: next_state = S0;
