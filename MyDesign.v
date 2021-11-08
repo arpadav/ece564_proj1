@@ -641,6 +641,25 @@ begin
 				// keep the same
 				current_input_addr = current_input_addr;
 				// next state
+				next_state = SF;
+			end else begin
+				// increment input address for next dimension
+				current_input_addr = current_input_addr + incr;
+				// next state
+				next_state = S1;
+			end
+			/* // otherwise set dut_busy to 0 and go back to state 0
+			set_dut_busy = low;
+			// next state
+			next_state = S0; */
+		end
+		
+		SF: begin
+			// check s3_done, keep looping if high
+			if (s3_done) begin
+				// keep the same
+				current_input_addr = current_input_addr;
+				// next state
 				next_state = SA;
 			end else begin
 				// increment input address for next dimension
