@@ -35,10 +35,10 @@ input [15:0] wmem_dut_read_data;
 
 // dut -> sram (output)
 output reg [11:0] dut_sram_write_address;
-wire [11:0] set_dut_sram_write_address;
 output reg [15:0] dut_sram_write_data;
-wire [15:0] set_dut_sram_write_data;
 output reg dut_sram_write_enable;
+wire [11:0] set_dut_sram_write_address;
+wire [15:0] set_dut_sram_write_data;
 wire set_dut_sram_write_enable;
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
@@ -96,17 +96,15 @@ parameter [3:0]
 // store states
 reg [3:0] current_state, next_state;
 
-// store weight dimensions
+// store weight dimensions, data
 reg [15:0] weight_dims;
-
-// store weight data
 reg [15:0] weight_data;
 
-// store current input address
+// store current read and write address
 reg [11:0] current_input_addr;
-
-// store current write address for output
 reg [11:0] output_write_addr;
+reg [11:0] p_current_input_addr;
+reg [11:0] p_output_write_addr;
 
 // store number of input rows, columns
 reg [15:0] input_num_rows;
@@ -118,11 +116,11 @@ reg [15:0] input_r0;
 reg [15:0] input_r1;
 reg [15:0] input_r2;
 
-// row and column counter
-reg [15:0] p_ridx_counter;
+// row and column counters
 reg [15:0] ridx_counter;
-reg [15:0] p_cidx_counter;
 reg [15:0] cidx_counter;
+reg [15:0] p_ridx_counter;
+reg [15:0] p_cidx_counter;
 
 // output to store
 reg [15:0] output_row_temp;
@@ -222,33 +220,33 @@ wire negedge_done;
 // ========== REG/WIRE PAIRS ==========
 // ========== REG/WIRE PAIRS ==========
 // weights (kernel limited to 3x3, so hardcoding)
-reg p_w02, p_w01, p_w00;
-reg p_w12, p_w11, p_w10;
-reg p_w22, p_w21, p_w20;
 wire w02, w01, w00;
 wire w12, w11, w10;
 wire w22, w21, w20;
+reg p_w02, p_w01, p_w00;
+reg p_w12, p_w11, p_w10;
+reg p_w22, p_w21, p_w20;
 // weights (kernel limited to 3x3, so hardcoding)
 
 // input data
-reg p_d02, p_d12, p_d22;
 wire d02, d12, d22;
+reg p_d02, p_d12, p_d22;
 wire set_data_flag;
 // input data
 
 // flag to tell each convolution module to pass through data
-reg p_conv_go;
 wire conv_go;
+reg p_conv_go;
 // flag to tell each convolution module to pass through data
 
 // pipelined down to the point where take outputs into account
-reg p_loaded_for_sweep;
 wire loaded_for_sweep;
+reg p_loaded_for_sweep;
 // pipelined down to the point where take outputs into account
 
 // same state indicator
-reg p_same_state_flag;
 wire same_state_flag;
+reg p_same_state_flag;
 // same state indicator 
 // ========== REG/WIRE PAIRS ==========
 // ========== REG/WIRE PAIRS ==========
@@ -274,6 +272,10 @@ always@(posedge clk or negedge reset_b)
 		// reset counters
 		p_ridx_counter <= data_init;
 		p_cidx_counter <= data_init;
+		
+		// reset read and write address
+		p_current_input_addr <= addr_init;
+		p_output_write_addr <= addr_init;
 		
 		// reset storage regs/flags stage 1 -> 2
 		s2_done <= low; 
@@ -327,6 +329,10 @@ always@(posedge clk or negedge reset_b)
 		// set counters
 		p_ridx_counter <= ridx_counter;
 		p_cidx_counter <= cidx_counter;
+		
+		// set read and write address
+		p_current_input_addr <= current_input_addr;
+		p_output_write_addr <= output_write_addr;
 		
 		// set storage regs/flags stage 1 -> 2
 		s2_done <= set_s2_done; 
@@ -383,35 +389,30 @@ begin
 	case(current_state)
 		// begin state, look for when to run
 		S0: begin
-			// check if top module wants us to run
-			// next state
-			next_state = dut_run ? S1 : S0;
-			/*if (dut_run) begin
-				// next state
-				next_state = S1;
-			end else begin
-				// retain state
-				next_state = S0;
-			end*/
-			
-			// set counters to 0
+			// reset counters
 			ridx_counter = data_init;
 			cidx_counter = data_init;
 			
-			// keep address at 0
+			// reset read and write address
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
 			
 			// reset adder ripple 
 			set_s2_done = low;
 			set_s2_waddr = addr_init;
-			// set_dut_sram_write_enable = low;
+			
+			// next state
+			next_state = dut_run ? S1 : S0;
 		end
 		
 		S1: begin
 			// counters retain value
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
+			
+			// retain read and write address
+			current_input_addr = p_current_input_addr;
+			output_write_addr = p_output_write_addr;
 			
 			// load in weights dimensions
 			dut_wmem_read_address = weights_dims_addr;
@@ -428,6 +429,13 @@ begin
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
 			
+			// increment read address. retain write address
+			current_input_addr = p_current_input_addr + incr;
+			output_write_addr = p_output_write_addr;
+			
+			// load in input dimension 2 (columns)
+			dut_sram_read_address = current_input_addr;
+			
 			// store weights dimensions
 			weight_dims = wmem_dut_read_data - incr;
 			
@@ -436,11 +444,6 @@ begin
 			
 			// load in weights data
 			dut_wmem_read_address = weights_data_addr;
-			
-			// increment current input address
-			// load in input dimension 2 (columns)
-			current_input_addr = current_input_addr + incr;
-			dut_sram_read_address = current_input_addr;
 			
 			// if (sram_dut_read_data == end_condition) begin
 			if (end_condition_met) begin
@@ -458,17 +461,19 @@ begin
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
 			
+			// increment read address. retain write address
+			current_input_addr = p_current_input_addr + incr;
+			output_write_addr = p_output_write_addr;
+			
+			// load in FIRST row of input
+			dut_sram_read_address = current_input_addr;
+			
 			// store weights data
 			weight_data = wmem_dut_read_data;
 			
 			// store input dimension 2 (cols)
 			input_num_cols = sram_dut_read_data - incr;
 			
-			// increment current input address
-			// load in FIRST row of input
-			current_input_addr = current_input_addr + incr;
-			dut_sram_read_address = current_input_addr;
-		
 			// next state
 			next_state = S4;
 		end
@@ -478,13 +483,15 @@ begin
 			ridx_counter = weight_dims - incr;
 			cidx_counter = p_cidx_counter;
 			
+			// increment read address. retain write address
+			current_input_addr = p_current_input_addr + incr;
+			output_write_addr = p_output_write_addr;
+			
+			// load in SECOND row of input
+			dut_sram_read_address = current_input_addr;
+			
 			// store FIRST row of input
 			input_r0 = sram_dut_read_data;
-			
-			// increment current input address
-			// load in SECOND row of input
-			current_input_addr = current_input_addr + incr;
-			dut_sram_read_address = current_input_addr;
 			
 			// next state
 			next_state = S5;
@@ -495,13 +502,15 @@ begin
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
 			
+			// increment read address. retain write address
+			current_input_addr = p_current_input_addr + incr;
+			output_write_addr = p_output_write_addr;
+			
+			// load in THIRD row of input
+			dut_sram_read_address = current_input_addr;
+			
 			// store SECOND row of input
 			input_r1 = sram_dut_read_data;
-			
-			// increment current input address
-			// load in THIRD row of input
-			current_input_addr = current_input_addr + incr;
-			dut_sram_read_address = current_input_addr;
 			
 			// next state
 			next_state = S6;
@@ -511,6 +520,10 @@ begin
 			// counters retain value
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
+			
+			// retain read and write address
+			current_input_addr = p_current_input_addr;
+			output_write_addr = p_output_write_addr;
 			
 			// store THIRD row of input
 			input_r2 = sram_dut_read_data;
@@ -526,6 +539,10 @@ begin
 			ridx_counter = p_ridx_counter;
 			cidx_counter = data_init;
 			
+			// retain read and write address
+			current_input_addr = p_current_input_addr;
+			output_write_addr = p_output_write_addr;
+			
 			// next state
 			next_state = S8;
 		end
@@ -534,6 +551,9 @@ begin
 			// increment column counter
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter + incr;
+			
+			// retain write address
+			output_write_addr = p_output_write_addr;
 			
 			if (~p_loaded_for_sweep) begin				
 				if (cidx_counter == weight_dims - incr) begin
@@ -555,15 +575,15 @@ begin
 			
 			// if NEXT clock cycle past dims, request to load new row
 			// otherwise loop in this state
-			if (col_prep_oob) begin
+			/*if (col_prep_oob) begin
 				if (~last_row_flag) begin
 					// increment current input address
 					// load in NEXT row of input
-					current_input_addr = current_input_addr + incr;
+					current_input_addr = p_current_input_addr + incr;
 					dut_sram_read_address = current_input_addr;
 				end else begin
 					// stays the same
-					current_input_addr = current_input_addr;
+					current_input_addr = p_current_input_addr;
 					dut_sram_read_address = dut_sram_read_address;
 				end
 				// next state
@@ -571,12 +591,31 @@ begin
 			end else begin
 				// next state
 				next_state = S8;
+			end*/
+			
+			// if NEXT clock cycle past dims, request to load new row
+			// otherwise loop in this state
+			if (col_prep_oob & ~last_row_flag) begin
+				// increment read address
+				// load in NEXT row of input
+				current_input_addr = p_current_input_addr + incr;
+				dut_sram_read_address = current_input_addr;
+			end else begin
+				// retain values
+				current_input_addr = p_current_input_addr;
+				dut_sram_read_address = dut_sram_read_address;
 			end
+			
+			// next state
+			next_state = col_prep_oob ? S9 : S8;
 		end
 		
 		S9: begin
 			// increment column counter
 			cidx_counter = p_cidx_counter + incr;
+			
+			// retain read address
+			current_input_addr = p_current_input_addr;
 			
 			// stop rippling done flag
 			set_s2_done = low;
@@ -591,8 +630,8 @@ begin
 				// store NEXT row of input
 				input_r2 = sram_dut_read_data;
 				
-				// increase write address
-				output_write_addr = output_write_addr + incr;
+				// increment write address
+				output_write_addr = p_output_write_addr + incr;
 				
 				// go back to sweeping
 				next_state = S7;
@@ -600,11 +639,11 @@ begin
 				// reset row counter
 				ridx_counter = data_init;
 				
-				// stays the same
+				// retain values
 				input_r0 = input_r0;
 				input_r1 = input_r1;
 				input_r2 = input_r2;
-				output_write_addr = output_write_addr;
+				output_write_addr = p_output_write_addr;
 				
 				// end, wrap up
 				next_state = SA;
@@ -618,21 +657,34 @@ begin
 			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
-				// keep the same
-				current_input_addr = current_input_addr;
-				output_write_addr = output_write_addr;
+				// retain read and write address
+				current_input_addr = p_current_input_addr;
+				output_write_addr = p_output_write_addr;
 				// next state
 				next_state = SA;
 			end else begin
-				// increment input address for next dimension
-				current_input_addr = current_input_addr + incr;
-				output_write_addr = output_write_addr + incr;
+				// increment both read and write address
+				current_input_addr = p_current_input_addr + incr;
+				output_write_addr = p_output_write_addr + incr;
 				// next state
 				next_state = S1;
 			end
 		end
 		
-		default: next_state = S0;
+		default: begin
+			// defaults
+			
+			// next state
+			next_state = S0;
+			
+			// reset counters
+			ridx_counter = data_init;
+			cidx_counter = data_init;
+			
+			// reset read and write address
+			current_input_addr = addr_init;
+			output_write_addr = addr_init;
+		end
 	endcase
 end
 
