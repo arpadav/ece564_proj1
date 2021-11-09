@@ -127,9 +127,9 @@ reg set_stored_flag;
 reg loaded_for_sweep;
 
 // weights (kernel limited to 3x3, so hardcoding)
-reg w02, w01, w00;
-reg w12, w11, w10;
-reg w22, w21, w20;
+reg p_w02, p_w01, p_w00;
+reg p_w12, p_w11, p_w10;
+reg p_w22, p_w21, p_w20;
 
 // input data
 reg d02;
@@ -138,7 +138,6 @@ reg d22;
 
 // stage 1 index and done flag
 reg set_s2_done;
-reg [11:0] s1_waddr;
 reg [11:0] set_s2_waddr;
 
 // stage 2 index and done flag
@@ -183,6 +182,11 @@ wire [11:0] waddr22_out, waddr21_out, waddr20_out;
 wire [3:0] c02_out, c01_out, c00_out;
 wire [3:0] c12_out, c11_out, c10_out;
 wire [3:0] c22_out, c21_out, c20_out;
+
+// weights (kernel limited to 3x3, so hardcoding)
+wire w02, w01, w00;
+wire w12, w11, w10;
+wire w22, w21, w20;
 
 // negative flags (outputs to be summed)
 wire n02, n01, n00;
@@ -232,6 +236,18 @@ always@(posedge clk or negedge reset_b)
 		// SYNOPSIS HERE
 		// output temp
 		output_row_temp <= counter_init;
+		
+		// weight registers
+		p_w02 <= low;
+		p_w01 <= low;
+		p_w00 <= low;
+		p_w12 <= low;
+		p_w11 <= low;
+		p_w10 <= low;
+		p_w22 <= low;
+		p_w21 <= low;
+		p_w20 <= low;
+		
 	end else begin
 		// next state
 		current_state <= next_state;
@@ -267,6 +283,17 @@ always@(posedge clk or negedge reset_b)
 		
 		// dut busy reg
 		dut_busy <= set_dut_busy;
+		
+		// weight registers
+		p_w02 <= w02;
+		p_w01 <= w01;
+		p_w00 <= w00;
+		p_w12 <= w12;
+		p_w11 <= w11;
+		p_w10 <= w10;
+		p_w22 <= w22;
+		p_w21 <= w21;
+		p_w20 <= w20;
 	end
 
 // bruh
@@ -370,6 +397,7 @@ begin
 			// set row counter to weight dim - 1
 			ridx_counter = weight_dims - incr;
 			
+			/*
 			// (kernel limited to 3x3, so hardcoding)
 			w00 = weight_data[0];
 			w01 = weight_data[1];
@@ -379,7 +407,7 @@ begin
 			w12 = weight_data[5];
 			w20 = weight_data[6];
 			w21 = weight_data[7];
-			w22 = weight_data[8];
+			w22 = weight_data[8];*/
 			
 			// load in weights into conv_modules
 			load_weights = high;
@@ -648,18 +676,8 @@ end
 
 always@(*) //?
 begin
-	/*if (s3_done) begin
-		if (s3_idx > max_col_idx[3:0]) begin
-			// SYNOPSIS HERE LATCH ?
-			output_row_temp = output_row_temp;
-		end else begin
-			// add to output for storing
-			output_row_temp[s3_idx] = ~negative_flag;
-		end
-	end else begin
-		output_row_temp = output_row_temp;
-	end*/
-	
+	// only write to temp register when calculation is ready to be written
+	// and when the index does not exceed the maximum potential index
 	if (s3_done & ~(s3_idx > max_col_idx[3:0])) begin
 		// add to output for storing
 		output_row_temp[s3_idx] = ~negative_flag;
@@ -668,25 +686,7 @@ begin
 		output_row_temp = output_row_temp;
 	end
 	
-	/*if (prev_s3_done) begin 
-		// retain these values
-		output_row_temp = output_row_temp;
-		set_stored_flag = set_stored_flag;
-		dut_sram_write_enable = dut_sram_write_enable;
-	end else begin
-		if (stored_flag) begin
-			// reset values
-			output_row_temp = counter_init;
-			set_stored_flag = low;
-			dut_sram_write_enable = low;
-		end else begin			
-			// otherwise retain values
-			output_row_temp = output_row_temp;			
-			set_stored_flag = set_stored_flag;
-			dut_sram_write_enable = dut_sram_write_enable;
-		end
-	end*/
-	
+	// if finished storing, reset 
 	if (~prev_s3_done & stored_flag) begin 
 		// reset values
 		output_row_temp = counter_init;
@@ -699,7 +699,7 @@ begin
 		dut_sram_write_enable = dut_sram_write_enable;
 	end
 	
-	// negative edge of done flag
+	// negative edge of done flag, meaning write
 	if (~s3_done & prev_s3_done) begin
 		// write 
 		dut_sram_write_enable = high;
@@ -724,6 +724,17 @@ assign max_col_idx = input_num_cols - weight_dims;
 
 // negative flag of currently rippled value
 assign negative_flag = (ones & twos1 & twos2) | ((ones | twos1 | twos2) & fours);
+
+// weight wires
+assign w02 = (current_state == S4) ? weight_data[2] : p_w02;
+assign w01 = (current_state == S4) ? weight_data[1] : p_w01;
+assign w00 = (current_state == S4) ? weight_data[0] : p_w00;
+assign w12 = (current_state == S4) ? weight_data[5] : p_w12;
+assign w11 = (current_state == S4) ? weight_data[4] : p_w11;
+assign w10 = (current_state == S4) ? weight_data[3] : p_w10;
+assign w22 = (current_state == S4) ? weight_data[8] : p_w22;
+assign w21 = (current_state == S4) ? weight_data[7] : p_w21;
+assign w20 = (current_state == S4) ? weight_data[6] : p_w20;
 
 // instantiate convolution modules
 // m02, m01, m00
