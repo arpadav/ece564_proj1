@@ -132,9 +132,7 @@ reg p_w12, p_w11, p_w10;
 reg p_w22, p_w21, p_w20;
 
 // input data
-reg d02;
-reg d12;
-reg d22;
+reg p_d02, p_d12, p_d22;
 
 // stage 1 index and done flag
 reg set_s2_done;
@@ -187,6 +185,10 @@ wire [3:0] c22_out, c21_out, c20_out;
 wire w02, w01, w00;
 wire w12, w11, w10;
 wire w22, w21, w20;
+
+// input data
+wire d02, d12, d22;
+wire set_data_flag;
 
 // negative flags (outputs to be summed)
 wire n02, n01, n00;
@@ -248,6 +250,11 @@ always@(posedge clk or negedge reset_b)
 		p_w21 <= low;
 		p_w20 <= low;
 		
+		// data registers
+		p_d02 <= low;
+		p_d12 <= low;
+		p_d22 <= low;
+		
 	end else begin
 		// next state
 		current_state <= next_state;
@@ -294,6 +301,11 @@ always@(posedge clk or negedge reset_b)
 		p_w22 <= w22;
 		p_w21 <= w21;
 		p_w20 <= w20;
+		
+		// data registers
+		p_d02 <= d02;
+		p_d12 <= d12;
+		p_d22 <= d22;
 	end
 
 // bruh
@@ -396,19 +408,7 @@ begin
 		S4: begin
 			// set row counter to weight dim - 1
 			ridx_counter = weight_dims - incr;
-			
-			/*
-			// (kernel limited to 3x3, so hardcoding)
-			w00 = weight_data[0];
-			w01 = weight_data[1];
-			w02 = weight_data[2];
-			w10 = weight_data[3];
-			w11 = weight_data[4];
-			w12 = weight_data[5];
-			w20 = weight_data[6];
-			w21 = weight_data[7];
-			w22 = weight_data[8];*/
-			
+						
 			// load in weights into conv_modules
 			load_weights = high;
 			
@@ -454,10 +454,10 @@ begin
 			// set column to 0
 			cidx_counter = counter_init;
 				
-			// load in data to convolution modules
+			/*// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
 			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];*/
 			
 			// start convolution to pass down data
 			conv_go = high;
@@ -474,10 +474,10 @@ begin
 			// increment counter
 			cidx_counter = cidx_counter + incr;
 			
-			// load in data to convolution modules
+			/*// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
 			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];*/
 			
 			if (~loaded_for_sweep) begin
 				if (cidx_counter == weight_dims) begin
@@ -533,10 +533,10 @@ begin
 			// increment counter
 			cidx_counter = cidx_counter + incr;
 			
-			// load in data to convolution modules
+			/*// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
 			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];*/
 			
 			if (~loaded_for_sweep) begin
 				if (cidx_counter == weight_dims) begin
@@ -590,10 +590,10 @@ begin
 			// increment counter
 			cidx_counter = cidx_counter + incr;
 			
-			// load in data to convolution modules
+			/*// load in data to convolution modules
 			d02 = input_r0[cidx_counter[3:0]];
 			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];
+			d22 = input_r2[cidx_counter[3:0]];*/
 			
 			// stop rippling done flag
 			set_s2_done = low;
@@ -735,6 +735,13 @@ assign w10 = (current_state == S4) ? weight_data[3] : p_w10;
 assign w22 = (current_state == S4) ? weight_data[8] : p_w22;
 assign w21 = (current_state == S4) ? weight_data[7] : p_w21;
 assign w20 = (current_state == S4) ? weight_data[6] : p_w20;
+
+// data wires
+assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9 | current_state == SB);
+assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
+assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
+assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
+
 
 // instantiate convolution modules
 // m02, m01, m00
