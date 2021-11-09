@@ -94,7 +94,7 @@ parameter [3:0]
 // ========== REGISTERS ==========
 // ========== REGISTERS ==========
 // store states
-reg [3:0] current_state, next_state, prev_state;
+reg [3:0] current_state, next_state;
 
 // store weight dimensions
 reg [15:0] weight_dims;
@@ -257,8 +257,6 @@ always@(posedge clk or negedge reset_b)
 	if (!reset_b) begin
 		// go to state 0
 		current_state <= S0;
-		// previous state, for same state flag
-		prev_state <= S0;
 		
 		// dut not busy
 		dut_busy <= low;
@@ -308,8 +306,6 @@ always@(posedge clk or negedge reset_b)
 	end else begin
 		// next state
 		current_state <= next_state;
-		// previous state, for same state flag
-		prev_state <= current_state;
 		
 		// dut busy reg
 		dut_busy <= set_dut_busy;
@@ -500,7 +496,6 @@ begin
 			next_state = S8;
 		end
 		
-		// =========================================================
 		S8: begin		
 			// increment counter
 			cidx_counter = cidx_counter + incr;
@@ -540,54 +535,9 @@ begin
 				next_state = S9;
 			end else begin
 				// next state
-				// next_state = SB;
 				next_state = S8;
 			end
 		end
-		
-		/*SB: begin		
-			// increment counter
-			cidx_counter = cidx_counter + incr;
-			
-			if (~p_loaded_for_sweep) begin				
-				if (cidx_counter == weight_dims - incr) begin
-					// ripple done flag through adders
-					set_s2_done = high;
-					set_s2_waddr = output_write_addr;
-				end else begin
-					// not done
-					set_s2_done = set_s2_done;
-					set_s2_waddr = set_s2_waddr;
-				end
-			end else begin
-				// stay low
-				// loaded_for_sweep = low;
-				// keep same
-				set_s2_done = set_s2_done;
-				set_s2_waddr = set_s2_waddr;
-			end
-			
-			// if NEXT clock cycle past dims, request to load new row
-			// otherwise loop in this state
-			if (col_prep_oob) begin
-				if (~last_row_flag) begin
-					// increment current input address
-					// load in NEXT row of input
-					current_input_addr = current_input_addr + incr;
-					dut_sram_read_address = current_input_addr;
-				end else begin
-					// stays the same
-					current_input_addr = current_input_addr;
-					dut_sram_read_address = dut_sram_read_address;
-				end
-				// next state
-				next_state = S9;
-			end else begin
-				// next state
-				next_state = S8;
-			end
-		end */
-		// =========================================================
 		
 		S9: begin
 			// increment counter
@@ -626,7 +576,6 @@ begin
 			end
 		end
 		
-		// =========================================================
 		SA: begin
 			// check s3_done, keep looping if high
 			if (s3_done) begin
@@ -634,7 +583,6 @@ begin
 				current_input_addr = current_input_addr;
 				output_write_addr = output_write_addr;
 				// next state
-				// next_state = SF;
 				next_state = SA;
 			end else begin
 				// increment input address for next dimension
@@ -644,24 +592,6 @@ begin
 				next_state = S1;
 			end
 		end
-		
-		/*SF: begin
-			// check s3_done, keep looping if high
-			if (s3_done) begin
-				// keep the same
-				current_input_addr = current_input_addr;
-				output_write_addr = output_write_addr;
-				// next state
-				next_state = SA;
-			end else begin
-				// increment input address for next dimension
-				current_input_addr = current_input_addr + incr;
-				output_write_addr = output_write_addr + incr;
-				// next state
-				next_state = S1;
-			end
-		end*/
-		// =========================================================
 		
 		default: next_state = S0;
 	endcase
@@ -706,7 +636,7 @@ assign w21 = (current_state == S4) ? weight_data[7] : p_w21;
 assign w20 = (current_state == S4) ? weight_data[6] : p_w20;
 
 // data wires
-assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9 | current_state == SB);
+assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9);
 assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
 assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
 assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
@@ -721,17 +651,16 @@ assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((curren
 assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
 
 // values are loaded in and ready to output
-assign loaded_for_sweep = (current_state == S8 | current_state == SB) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
+assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
 
-// ========== FSM WIRES ==========
-// ========== FSM WIRES ==========
-
-
-// ========== FLAGS/INDICATORS ==========
-// ========== FLAGS/INDICATORS ==========
 // return same state indicator 
-assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == prev_state) ? ~p_same_state_flag : p_same_state_flag);
+assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
+// ========== FSM WIRES ==========
+// ========== FSM WIRES ==========
 
+
+// ========== FLAGS/INDICATORS ==========
+// ========== FLAGS/INDICATORS ==========
 // row and column out-of-bounds flags
 assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
 assign col_prep_oob = (cidx_counter == input_num_cols);
