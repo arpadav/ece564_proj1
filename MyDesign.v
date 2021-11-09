@@ -119,7 +119,9 @@ reg [15:0] input_r1;
 reg [15:0] input_r2;
 
 // row and column counter
+reg [15:0] p_ridx_counter;
 reg [15:0] ridx_counter;
+reg [15:0] p_cidx_counter;
 reg [15:0] cidx_counter;
 
 // output to store
@@ -269,6 +271,10 @@ always@(posedge clk or negedge reset_b)
 		// reset temporary output register
 		p_output_row_temp <= data_init;
 		
+		// reset counters
+		p_ridx_counter <= data_init;
+		p_cidx_counter <= data_init;
+		
 		// reset storage regs/flags stage 1 -> 2
 		s2_done <= low; 
 		s2_idx <= indx_init; 
@@ -317,6 +323,10 @@ always@(posedge clk or negedge reset_b)
 		dut_sram_write_data <= set_dut_sram_write_data;
 		// set temporary output register
 		p_output_row_temp <= output_row_temp;
+		
+		// set counters
+		p_ridx_counter <= ridx_counter;
+		p_cidx_counter <= cidx_counter;
 		
 		// set storage regs/flags stage 1 -> 2
 		s2_done <= set_s2_done; 
@@ -374,13 +384,19 @@ begin
 		// begin state, look for when to run
 		S0: begin
 			// check if top module wants us to run
-			if (dut_run) begin
+			// next state
+			next_state = dut_run ? S1 : S0;
+			/*if (dut_run) begin
 				// next state
 				next_state = S1;
 			end else begin
 				// retain state
 				next_state = S0;
-			end
+			end*/
+			
+			// set counters to 0
+			ridx_counter = data_init;
+			cidx_counter = data_init;
 			
 			// keep address at 0
 			current_input_addr = addr_init;
@@ -390,13 +406,13 @@ begin
 			set_s2_done = low;
 			set_s2_waddr = addr_init;
 			// set_dut_sram_write_enable = low;
-							
-			// set counters to 0
-			ridx_counter = data_init;
-			cidx_counter = data_init;
 		end
 		
 		S1: begin
+			// counters retain value
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter;
+			
 			// load in weights dimensions
 			dut_wmem_read_address = weights_dims_addr;
 			
@@ -408,6 +424,10 @@ begin
 		end
 		
 		S2: begin
+			// counters retain value
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter;
+			
 			// store weights dimensions
 			weight_dims = wmem_dut_read_data - incr;
 			
@@ -434,6 +454,10 @@ begin
 		end
 		
 		S3: begin
+			// counters retain value
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter;
+			
 			// store weights data
 			weight_data = wmem_dut_read_data;
 			
@@ -450,8 +474,9 @@ begin
 		end
 		
 		S4: begin
-			// set row counter to weight dim - 1
+			// set row counter to weight dim - 1. column retain
 			ridx_counter = weight_dims - incr;
+			cidx_counter = p_cidx_counter;
 			
 			// store FIRST row of input
 			input_r0 = sram_dut_read_data;
@@ -465,7 +490,11 @@ begin
 			next_state = S5;
 		end
 		
-		S5: begin			
+		S5: begin
+			// counters retain value
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter;
+			
 			// store SECOND row of input
 			input_r1 = sram_dut_read_data;
 			
@@ -479,6 +508,10 @@ begin
 		end
 		
 		S6: begin
+			// counters retain value
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter;
+			
 			// store THIRD row of input
 			input_r2 = sram_dut_read_data;
 			
@@ -490,15 +523,17 @@ begin
 			// start loading for sweep
 			// row counter already updated
 			// set column to 0
+			ridx_counter = p_ridx_counter;
 			cidx_counter = data_init;
 			
 			// next state
 			next_state = S8;
 		end
 		
-		S8: begin		
-			// increment counter
-			cidx_counter = cidx_counter + incr;
+		S8: begin
+			// increment column counter
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter + incr;
 			
 			if (~p_loaded_for_sweep) begin				
 				if (cidx_counter == weight_dims - incr) begin
@@ -540,21 +575,21 @@ begin
 		end
 		
 		S9: begin
-			// increment counter
-			cidx_counter = cidx_counter + incr;
+			// increment column counter
+			cidx_counter = p_cidx_counter + incr;
 			
 			// stop rippling done flag
 			set_s2_done = low;
 			
 			if (~last_row_flag) begin
+				// increase row counter
+				ridx_counter = p_ridx_counter + incr;
+				
 				// propagate rows upward
 				input_r0 = input_r1;
 				input_r1 = input_r2;
 				// store NEXT row of input
 				input_r2 = sram_dut_read_data;
-				
-				// increase row counter
-				ridx_counter = ridx_counter + incr;
 				
 				// increase write address
 				output_write_addr = output_write_addr + incr;
@@ -562,14 +597,14 @@ begin
 				// go back to sweeping
 				next_state = S7;
 			end else begin
+				// reset row counter
+				ridx_counter = data_init;
+				
 				// stays the same
 				input_r0 = input_r0;
 				input_r1 = input_r1;
 				input_r2 = input_r2;
 				output_write_addr = output_write_addr;
-				
-				// reset row counter
-				ridx_counter = data_init;
 				
 				// end, wrap up
 				next_state = SA;
@@ -577,6 +612,10 @@ begin
 		end
 		
 		SA: begin
+			// counters retain value
+			ridx_counter = p_ridx_counter;
+			cidx_counter = p_cidx_counter;
+			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
 				// keep the same
