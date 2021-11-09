@@ -36,6 +36,10 @@ output reg [11:0] dut_sram_write_address;
 output reg [15:0] dut_sram_write_data;
 output reg dut_sram_write_enable;
 
+
+
+// ========== PARAMETERS ==========
+
 // high and low, used for flags and whatnot
 parameter high = 1'b1;
 parameter low = 1'b0;
@@ -82,7 +86,12 @@ parameter [3:0]
 	SE = 4'b1110,
 	SF = 4'b1111;
 
-// REGISTERS
+// ========== PARAMETERS ==========
+
+
+
+// ========== REGISTERS ==========
+
 // store states
 reg [3:0] current_state, next_state;
 
@@ -126,14 +135,6 @@ reg stored_flag;
 reg set_stored_flag;
 reg loaded_for_sweep;
 
-// weights (kernel limited to 3x3, so hardcoding)
-reg p_w02, p_w01, p_w00;
-reg p_w12, p_w11, p_w10;
-reg p_w22, p_w21, p_w20;
-
-// input data
-reg p_d02, p_d12, p_d22;
-
 // stage 1 index and done flag
 reg set_s2_done;
 reg [11:0] set_s2_waddr;
@@ -163,9 +164,14 @@ reg twos1, twos2;
 reg fours;
 
 // DEBUGGING
-reg debug;
+// reg debug;
 
-// WIRES
+// ========== REGISTERS ==========
+
+
+
+// ========== WIRES ==========
+
 // pipelined data
 wire d02_out, d01_out, d00_out;
 wire d12_out, d11_out, d10_out;
@@ -180,15 +186,6 @@ wire [11:0] waddr22_out, waddr21_out, waddr20_out;
 wire [3:0] c02_out, c01_out, c00_out;
 wire [3:0] c12_out, c11_out, c10_out;
 wire [3:0] c22_out, c21_out, c20_out;
-
-// weights (kernel limited to 3x3, so hardcoding)
-wire w02, w01, w00;
-wire w12, w11, w10;
-wire w22, w21, w20;
-
-// input data
-wire d02, d12, d22;
-wire set_data_flag;
 
 // negative flags (outputs to be summed)
 wire n02, n01, n00;
@@ -220,6 +217,29 @@ wire [15:0] max_col_idx;
 
 // wire used to store output data
 wire negative_flag;
+
+// ========== WIRES ==========
+
+
+
+// ========== REG/WIRE PAIRS ==========
+
+// weights (kernel limited to 3x3, so hardcoding)
+reg p_w02, p_w01, p_w00;
+reg p_w12, p_w11, p_w10;
+reg p_w22, p_w21, p_w20;
+wire w02, w01, w00;
+wire w12, w11, w10;
+wire w22, w21, w20;
+// weights (kernel limited to 3x3, so hardcoding)
+
+// input data
+reg p_d02, p_d12, p_d22;
+wire d02, d12, d22;
+wire set_data_flag;
+// input data
+
+// ========== REG/WIRE PAIRS ==========
 
 // Moore machine, sequential logic
 always@(posedge clk or negedge reset_b)
@@ -254,6 +274,9 @@ always@(posedge clk or negedge reset_b)
 		p_d02 <= low;
 		p_d12 <= low;
 		p_d22 <= low;
+		
+		// convolution indicator
+		p_conv_go <= low;
 		
 	end else begin
 		// next state
@@ -306,6 +329,10 @@ always@(posedge clk or negedge reset_b)
 		p_d02 <= d02;
 		p_d12 <= d12;
 		p_d22 <= d22;
+		
+		// convolution indicator
+		p_conv_go <= conv_go;
+		
 	end
 
 // bruh
@@ -325,15 +352,15 @@ begin
 				next_state = S0;
 			end
 			
-			// debug
-			debug = low;
+			/*// debug
+			debug = low;*/
 			
 			// keep address at 0
 			current_input_addr = initial_addr;
 			output_write_addr = initial_addr;
 			
-			// do not do convolution
-			conv_go = low;
+			/*// do not do convolution
+			conv_go = low;*/
 			
 			// values not fully rippled down
 			loaded_for_sweep = low;
@@ -453,14 +480,9 @@ begin
 			// row counter already updated
 			// set column to 0
 			cidx_counter = counter_init;
-				
-			/*// load in data to convolution modules
-			d02 = input_r0[cidx_counter[3:0]];
-			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];*/
 			
-			// start convolution to pass down data
-			conv_go = high;
+			/*// start convolution to pass down data
+			conv_go = high;*/
 			
 			// next state
 			next_state = S8;
@@ -468,16 +490,11 @@ begin
 		
 		// =========================================================
 		S8: begin
-			// debug oscillate
-			debug = ~debug;
+			/*// debug oscillate
+			debug = ~debug;*/
 		
 			// increment counter
 			cidx_counter = cidx_counter + incr;
-			
-			/*// load in data to convolution modules
-			d02 = input_r0[cidx_counter[3:0]];
-			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];*/
 			
 			if (~loaded_for_sweep) begin
 				if (cidx_counter == weight_dims) begin
@@ -527,16 +544,11 @@ begin
 		end
 		
 		SB: begin
-			// debug oscillate
-			debug = ~debug;
+			/*// debug oscillate
+			debug = ~debug;*/
 		
 			// increment counter
 			cidx_counter = cidx_counter + incr;
-			
-			/*// load in data to convolution modules
-			d02 = input_r0[cidx_counter[3:0]];
-			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];*/
 			
 			if (~loaded_for_sweep) begin
 				if (cidx_counter == weight_dims) begin
@@ -590,11 +602,6 @@ begin
 			// increment counter
 			cidx_counter = cidx_counter + incr;
 			
-			/*// load in data to convolution modules
-			d02 = input_r0[cidx_counter[3:0]];
-			d12 = input_r1[cidx_counter[3:0]];
-			d22 = input_r2[cidx_counter[3:0]];*/
-			
 			// stop rippling done flag
 			set_s2_done = low;
 			
@@ -611,8 +618,8 @@ begin
 				// increase write address
 				output_write_addr = output_write_addr + incr;
 								
-				// convolution passing data
-				conv_go = high;
+				/*// convolution passing data
+				conv_go = high;*/
 				
 				// go back to sweeping
 				next_state = S7;
@@ -623,8 +630,8 @@ begin
 				input_r2 = input_r2;
 				output_write_addr = output_write_addr;
 				
-				// stop convolution passing data, only left for adders to finish rippling
-				conv_go = low;
+				/*// stop convolution passing data, only left for adders to finish rippling
+				conv_go = low;*/
 				
 				// reset row counter
 				ridx_counter = counter_init;
@@ -723,6 +730,8 @@ assign col_prep_oob = (cidx_counter == input_num_cols);
 assign max_col_idx = input_num_cols - weight_dims;
 
 // negative flag of currently rippled value
+// if value 5 or more, then negative. otherwise, positive
+// (out of 9 values, hence why '5' indicates majority)
 assign negative_flag = (ones & twos1 & twos2) | ((ones | twos1 | twos2) & fours);
 
 // weight wires
@@ -742,11 +751,13 @@ assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
 assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
 assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
+// convolution indicicator
+assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
 
 // instantiate convolution modules
-// m02, m01, m00
-// m12, m11, m10
-// m22, m21, m20
+// dxy -> m02, m01, m00
+// dxy -> m12, m11, m10
+// dxy -> m22, m21, m20
 // first row
 conv_module m02 (clk, reset_b, conv_go, load_weights, w02, d02, top_pipeline_idx, output_write_addr, cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
 conv_module m01 (clk, reset_b, conv_go, load_weights, w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
@@ -761,11 +772,11 @@ conv_module m21 (clk, reset_b, conv_go, load_weights, w21, d22_out, rest_pipelin
 conv_module m20 (clk, reset_b, conv_go, load_weights, w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
 
 // instantiate adders for pos/neg calculation
-// stage 1
+// input stage 1 -> output stage 2
 full_adder FA1_s1 (n02, n01, n00, FA1_s1_ones, FA1_s1_twos);
 full_adder FA2_s1 (n12, n11, n10, FA2_s1_ones, FA2_s1_twos);
 full_adder FA3_s1 (n22, n21, n20, FA3_s1_ones, FA3_s1_twos);
-// stage 2
+// input stage 2 -> output stage 3
 full_adder FA1_s2 (FA1_s2_in1, FA1_s2_in2, FA1_s2_in3, FA1_s2_ones, FA1_s2_twos);
 full_adder FA2_s2 (FA2_s2_in1, FA2_s2_in2, FA2_s2_in3, FA2_s2_twos, FA2_s2_fours);
 
