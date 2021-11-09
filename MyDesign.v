@@ -94,7 +94,7 @@ parameter [3:0]
 // ========== REGISTERS ==========
 // ========== REGISTERS ==========
 // store states
-reg [3:0] current_state, next_state;
+reg [3:0] current_state, next_state, prev_state;
 
 // store weight dimensions
 reg [15:0] weight_dims;
@@ -257,6 +257,8 @@ always@(posedge clk or negedge reset_b)
 	if (!reset_b) begin
 		// go to state 0
 		current_state <= S0;
+		// previous state, for same state flag
+		prev_state <= S0;
 		
 		// dut not busy
 		dut_busy <= low;
@@ -301,11 +303,13 @@ always@(posedge clk or negedge reset_b)
 		// reset rippled down indicator
 		p_loaded_for_sweep <= low;
 		// reset same state indicator
-		p_same_state_flag <= same_state_flag;
+		p_same_state_flag <= low;
 		
 	end else begin
 		// next state
 		current_state <= next_state;
+		// previous state, for same state flag
+		prev_state <= current_state;
 		
 		// dut busy reg
 		dut_busy <= set_dut_busy;
@@ -368,7 +372,7 @@ always@(posedge clk or negedge reset_b)
 	end
 
 // FSM states
-always@(current_state or dut_run or same_state_flag)
+always@(current_state or dut_run or p_same_state_flag)
 begin
 	case(current_state)
 		// begin state, look for when to run
@@ -726,7 +730,7 @@ assign loaded_for_sweep = (current_state == S8 | current_state == SB) ? ((p_load
 // ========== FLAGS/INDICATORS ==========
 // ========== FLAGS/INDICATORS ==========
 // return same state indicator 
-assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
+assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == prev_state) ? ~p_same_state_flag : p_same_state_flag);
 
 // row and column out-of-bounds flags
 assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
