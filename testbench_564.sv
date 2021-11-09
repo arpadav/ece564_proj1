@@ -3,7 +3,7 @@ module tb_top();
 
 
   parameter CLK_PHASE=5;
-  parameter ROUND=1; //1
+  parameter ROUND=1;
   //parameter ADDR_464=12'h0d;
   parameter ADDR_564=12'h01f;
   //parameter num_results_464=14;
@@ -130,15 +130,17 @@ module tb_top();
   // Stimulus
   initial begin
 	$display("-------------------------------start_simulation-------------------------------\n");
-      repeat(5) @(posedge clk); //25 
+      repeat(25) @(posedge clk); 
       reset_b=0;
       dut_run=0;
-      repeat(5) @(posedge clk); // 25
+      repeat(25) @(posedge clk);
       reset_b=1;
       for(j=0;j<ROUND;j=j+1) begin
          if(j!=0) wait(checkFinish[j-1]);
-         input_mem.loadInitFile($sformatf("./input_sram_me.dat")); // -./ + ,j
-         weight_mem.loadInitFile($sformatf("./weight_sram.dat")); // -./ + ,j
+         input_mem.loadInitFile("./input_sram.dat");
+         weight_mem.loadInitFile("./weight_sram.dat");
+         // input_mem.loadInitFile($sformatf("input_%0d/input_sram.dat",j));
+         // weight_mem.loadInitFile($sformatf("input_%0d/weight_sram.dat",j));
 			
 		repeat(5) @(posedge clk);
 		wait(dut_busy==0);
@@ -181,7 +183,8 @@ module tb_top();
 
        if (q==0)
 		//$writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_464);
-		$writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_564);
+		// $writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_564);
+		$writememb("./result.dat",output_mem.mem,12'h000,ADDR_564);
        //else
 	//	$writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_ONE);
 	
@@ -193,10 +196,12 @@ module tb_top();
 	// Result comparator 
 	// Compare your compute results with the results computed by Python script
        $display("-------------------------------load results to output_array-------------------------------\n");
-       $readmemb($sformatf("input_%0d/result.dat",q),result_array);
+       // $readmemb($sformatf("input_%0d/result.dat",q),result_array);
+       $readmemb("./result.dat",result_array);
 
        $display("-------------------------------load results to golden_output_array-------------------------------\n");
-       $readmemb($sformatf("input_%0d/golden_outputs.dat",q),golden_result_array);
+       // $readmemb($sformatf("input_%0d/golden_outputs.dat",q),golden_result_array);
+       $readmemb("./golden_outputs.dat",golden_result_array);
 	   
 	   $display("-------------------------------Round %0d start compare -------------------------------\n",q);
             //if(q==0)begin
