@@ -64,7 +64,7 @@ parameter incr = 1'b1;
 // initial index, address, counter
 parameter indx_init = 4'h0;
 parameter addr_init = 12'h0;
-parameter data_init = 16'h0;
+parameter cntr_init = 16'h0;
 
 // end condition
 parameter end_condition = 16'h00FF;
@@ -124,7 +124,16 @@ reg [15:0] cidx_counter;
 
 // output to store
 reg [15:0] output_row_temp;
-reg [15:0] p_output_row_temp;
+
+// flag to tell each convolution module to pass through data
+reg p_conv_go;
+wire conv_go;
+
+// flag to load in weights to convolution modules
+reg load_weights;
+
+// pipelined down to the point where take outputs into account
+reg loaded_for_sweep;
 
 // stage 1 index and done flag
 reg set_s2_done;
@@ -193,9 +202,6 @@ wire FA1_s2_twos;
 wire FA2_s2_twos;
 wire FA2_s2_fours;
 
-// flag to load in weights to convolution modules
-wire load_weights;
-
 // row and column out-of-bounds flags
 wire last_row_flag;
 wire col_prep_oob;
@@ -208,11 +214,6 @@ wire [15:0] max_col_idx;
 
 // wire used to store output data
 wire negative_flag;
-
-// storage indicator wires
-wire finished_storing;
-wire negedge_done;
-
 // ========== WIRES ==========
 // ========== WIRES ==========
 
@@ -233,21 +234,6 @@ reg p_d02, p_d12, p_d22;
 wire d02, d12, d22;
 wire set_data_flag;
 // input data
-
-// flag to tell each convolution module to pass through data
-reg p_conv_go;
-wire conv_go;
-// flag to tell each convolution module to pass through data
-
-// pipelined down to the point where take outputs into account
-reg p_loaded_for_sweep;
-wire loaded_for_sweep;
-// pipelined down to the point where take outputs into account
-
-// same state indicator
-reg p_same_state_flag;
-wire same_state_flag;
-// same state indicator 
 // ========== REG/WIRE PAIRS ==========
 // ========== REG/WIRE PAIRS ==========
 
@@ -265,9 +251,9 @@ always@(posedge clk or negedge reset_b)
 		dut_sram_write_enable <= low;
 		// reset outputs
 		dut_sram_write_address <= addr_init;
-		dut_sram_write_data <= data_init;
+		dut_sram_write_data <= cntr_init;
 		// reset temporary output register
-		p_output_row_temp <= data_init;
+		output_row_temp <= cntr_init;
 		
 		// reset storage regs/flags stage 1 -> 2
 		s2_done <= low; 
@@ -298,10 +284,6 @@ always@(posedge clk or negedge reset_b)
 		
 		// reset convolution indicator
 		p_conv_go <= low;
-		// reset rippled down indicator
-		p_loaded_for_sweep <= low;
-		// reset same state indicator
-		p_same_state_flag <= same_state_flag;
 		
 	end else begin
 		// next state
@@ -316,7 +298,7 @@ always@(posedge clk or negedge reset_b)
 		dut_sram_write_address <= set_dut_sram_write_address;
 		dut_sram_write_data <= set_dut_sram_write_data;
 		// set temporary output register
-		p_output_row_temp <= output_row_temp;
+		// bruh
 		
 		// set storage regs/flags stage 1 -> 2
 		s2_done <= set_s2_done; 
@@ -361,14 +343,11 @@ always@(posedge clk or negedge reset_b)
 		
 		// set convolution indicator
 		p_conv_go <= conv_go;
-		// set rippled down indicator
-		p_loaded_for_sweep <= loaded_for_sweep;
-		// set same state indicator
-		p_same_state_flag <= same_state_flag;
+		
 	end
 
 // FSM states
-always@(current_state or dut_run or same_state_flag)
+always@(current_state or dut_run)
 begin
 	case(current_state)
 		// begin state, look for when to run
@@ -386,14 +365,20 @@ begin
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
 			
+			// values not fully rippled down
+			loaded_for_sweep = low;
+			
 			// reset adder ripple 
 			set_s2_done = low;
 			set_s2_waddr = addr_init;
 			// set_dut_sram_write_enable = low;
-							
+				
+			// do not load weights
+			load_weights = low;
+			
 			// set counters to 0
-			ridx_counter = data_init;
-			cidx_counter = data_init;
+			ridx_counter = cntr_init;
+			cidx_counter = cntr_init;
 		end
 		
 		S1: begin
@@ -452,6 +437,9 @@ begin
 		S4: begin
 			// set row counter to weight dim - 1
 			ridx_counter = weight_dims - incr;
+						
+			// load in weights into conv_modules
+			load_weights = high;
 			
 			// store FIRST row of input
 			input_r0 = sram_dut_read_data;
@@ -465,7 +453,10 @@ begin
 			next_state = S5;
 		end
 		
-		S5: begin			
+		S5: begin
+			// stop loading in weights
+			load_weights = low;
+			
 			// store SECOND row of input
 			input_r1 = sram_dut_read_data;
 			
@@ -490,7 +481,7 @@ begin
 			// start loading for sweep
 			// row counter already updated
 			// set column to 0
-			cidx_counter = data_init;
+			cidx_counter = cntr_init;
 			
 			// next state
 			next_state = S8;
@@ -501,7 +492,15 @@ begin
 			// increment counter
 			cidx_counter = cidx_counter + incr;
 			
-			if (~p_loaded_for_sweep) begin				
+			if (~loaded_for_sweep) begin
+				if (cidx_counter == weight_dims) begin
+					// set high
+					loaded_for_sweep = high;
+				end else begin
+					// stay low
+					loaded_for_sweep = loaded_for_sweep;
+				end
+				
 				if (cidx_counter == weight_dims - incr) begin
 					// ripple done flag through adders
 					set_s2_done = high;
@@ -513,7 +512,7 @@ begin
 				end
 			end else begin
 				// stay low
-				// loaded_for_sweep = low;
+				loaded_for_sweep = low;
 				// keep same
 				set_s2_done = set_s2_done;
 				set_s2_waddr = set_s2_waddr;
@@ -536,16 +535,23 @@ begin
 				next_state = S9;
 			end else begin
 				// next state
-				// next_state = SB;
-				next_state = S8;
+				next_state = SB;
 			end
 		end
 		
-		/*SB: begin		
+		SB: begin		
 			// increment counter
 			cidx_counter = cidx_counter + incr;
 			
-			if (~p_loaded_for_sweep) begin				
+			if (~loaded_for_sweep) begin
+				if (cidx_counter == weight_dims) begin
+					// set high
+					loaded_for_sweep = high;
+				end else begin
+					// stay low
+					loaded_for_sweep = loaded_for_sweep;
+				end
+				
 				if (cidx_counter == weight_dims - incr) begin
 					// ripple done flag through adders
 					set_s2_done = high;
@@ -557,7 +563,7 @@ begin
 				end
 			end else begin
 				// stay low
-				// loaded_for_sweep = low;
+				loaded_for_sweep = low;
 				// keep same
 				set_s2_done = set_s2_done;
 				set_s2_waddr = set_s2_waddr;
@@ -582,7 +588,7 @@ begin
 				// next state
 				next_state = S8;
 			end
-		end */
+		end
 		// =========================================================
 		
 		S9: begin
@@ -615,7 +621,7 @@ begin
 				output_write_addr = output_write_addr;
 				
 				// reset row counter
-				ridx_counter = data_init;
+				ridx_counter = cntr_init;
 				
 				// end, wrap up
 				next_state = SA;
@@ -630,8 +636,7 @@ begin
 				current_input_addr = current_input_addr;
 				output_write_addr = output_write_addr;
 				// next state
-				// next_state = SF;
-				next_state = SA;
+				next_state = SF;
 			end else begin
 				// increment input address for next dimension
 				current_input_addr = current_input_addr + incr;
@@ -641,7 +646,7 @@ begin
 			end
 		end
 		
-		/*SF: begin
+		SF: begin
 			// check s3_done, keep looping if high
 			if (s3_done) begin
 				// keep the same
@@ -656,25 +661,15 @@ begin
 				// next state
 				next_state = S1;
 			end
-		end*/
+		end
 		// =========================================================
 		
 		default: next_state = S0;
 	endcase
 end
 
-// using register + always@* statement, because individual addresses
-// are being called instead of the entire register
 always@(*)
 begin
-	// if finished storing, reset 
-	if ((current_state == S0) | finished_storing) begin 
-		// reset values
-		output_row_temp = data_init;
-	end else begin
-		// otherwise retain values
-		output_row_temp = p_output_row_temp;
-	end
 	// only write to temp register when calculation is ready to be written
 	// and when the index does not exceed the maximum potential index
 	if (s3_done & ~(s3_idx > max_col_idx[3:0])) begin
@@ -682,9 +677,26 @@ begin
 		output_row_temp[s3_idx] = ~negative_flag;
 	end else begin
 		// otherwise retain value
-		// output_row_temp = p_output_row_temp;
-		output_row_temp[s3_idx] = p_output_row_temp[s3_idx];
+		output_row_temp = output_row_temp;
 	end
+	
+	// if finished storing, reset 
+	if (~prev_s3_done & dut_sram_write_enable) begin 
+		// reset values
+		output_row_temp = cntr_init;
+	end else begin
+		// otherwise retain values
+		output_row_temp = output_row_temp;
+	end
+	
+	/*// negative edge of done flag, meaning write
+	if (~s3_done & prev_s3_done) begin
+		// write 
+		// dut_sram_write_data = output_row_temp;
+	end else begin
+		// do not write, retain
+		// dut_sram_write_data = dut_sram_write_data;
+	end*/
 end
 
 
@@ -707,27 +719,17 @@ assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
 assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
 assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
-// load weights flag
-assign load_weights = (current_state == S4) ? high : low;
-
 // convolution indicicator
 assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
 
 // when to set dut to busy
 assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
-
-// values are loaded in and ready to output
-assign loaded_for_sweep = (current_state == S8 | current_state == SB) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
-
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
 
 
 // ========== FLAGS/INDICATORS ==========
 // ========== FLAGS/INDICATORS ==========
-// return same state indicator 
-assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
-
 // row and column out-of-bounds flags
 assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
 assign col_prep_oob = (cidx_counter == input_num_cols);
