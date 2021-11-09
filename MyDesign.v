@@ -126,14 +126,12 @@ reg [15:0] p_cidx_counter;
 reg [15:0] output_row_temp;
 reg [15:0] p_output_row_temp;
 
-// stage 1 index and done flag
-reg set_s2_done;
-reg [11:0] set_s2_waddr;
-
 // stage 2 index and done flag
 reg s2_done;
+wire set_s2_done;
 reg [3:0] s2_idx;
 reg [11:0] s2_waddr;
+wire [11:0] set_s2_waddr;
 
 // stage 3 index and done flag
 reg s3_done;
@@ -255,7 +253,7 @@ reg p_same_state_flag;
 // FSM flip-flops
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) begin
-		// go to state 0
+		// starting state
 		current_state <= S0;
 		
 		// dut not busy
@@ -278,6 +276,7 @@ always@(posedge clk or negedge reset_b)
 		p_output_write_addr <= addr_init;
 		
 		// reset storage regs/flags stage 1 -> 2
+		// p_set_s2_done <= low;
 		s2_done <= low; 
 		s2_idx <= indx_init; 
 		s2_waddr <= addr_init; 
@@ -287,6 +286,20 @@ always@(posedge clk or negedge reset_b)
 		prev_s3_done <= low;
 		s3_idx <= indx_init;
 		s3_waddr <= addr_init;
+		
+		// reset FA stage 1 -> 2
+		FA1_s2_in1 <= low;
+		FA1_s2_in2 <= low;
+		FA1_s2_in3 <= low;
+		FA2_s2_in1 <= low;
+		FA2_s2_in2 <= low;
+		FA2_s2_in3 <= low;
+				
+		// reset FA stage 2 -> 3
+		ones <= low;
+		twos1 <= low;
+		twos2 <= low;
+		fours <= low;
 		
 		// reset weight registers
 		p_w02 <= low;
@@ -335,6 +348,7 @@ always@(posedge clk or negedge reset_b)
 		p_output_write_addr <= output_write_addr;
 		
 		// set storage regs/flags stage 1 -> 2
+		// p_set_s2_done <= set_s2_done;
 		s2_done <= set_s2_done; 
 		s2_idx <= c00_out; 
 		s2_waddr <= set_s2_waddr; 
@@ -345,7 +359,7 @@ always@(posedge clk or negedge reset_b)
 		s3_idx <= s2_idx;
 		s3_waddr <= s2_waddr;
 		
-		// FA stage 1 -> 2
+		// set FA stage 1 -> 2
 		FA1_s2_in1 <= FA1_s1_ones;
 		FA1_s2_in2 <= FA2_s1_ones;
 		FA1_s2_in3 <= FA3_s1_ones;
@@ -353,7 +367,7 @@ always@(posedge clk or negedge reset_b)
 		FA2_s2_in2 <= FA2_s1_twos;
 		FA2_s2_in3 <= FA3_s1_twos;
 				
-		// FA stage 2 -> 3
+		// set FA stage 2 -> 3
 		ones <= FA1_s2_ones;
 		twos1 <= FA1_s2_twos;
 		twos2 <= FA2_s2_twos;
@@ -398,8 +412,8 @@ begin
 			output_write_addr = addr_init;
 			
 			// reset adder ripple 
-			set_s2_done = low;
-			set_s2_waddr = addr_init;
+			// set_s2_done = low;
+			// set_s2_waddr = addr_init;
 			
 			// next state
 			next_state = dut_run ? S1 : S0;
@@ -535,7 +549,7 @@ begin
 		S7: begin
 			// start loading for sweep
 			// row counter already updated
-			// set column to 0
+			// reset column counter
 			ridx_counter = p_ridx_counter;
 			cidx_counter = data_init;
 			
@@ -555,50 +569,30 @@ begin
 			// retain write address
 			output_write_addr = p_output_write_addr;
 			
-			if (~p_loaded_for_sweep) begin				
+			/*if (~p_loaded_for_sweep) begin				
 				if (cidx_counter == weight_dims - incr) begin
 					// ripple done flag through adders
-					set_s2_done = high;
+					// set_s2_done = high;
 					set_s2_waddr = output_write_addr;
 				end else begin
 					// not done
-					set_s2_done = set_s2_done;
+					// set_s2_done = set_s2_done;
 					set_s2_waddr = set_s2_waddr;
 				end
 			end else begin
 				// stay low
 				// loaded_for_sweep = low;
 				// keep same
-				set_s2_done = set_s2_done;
+				// set_s2_done = set_s2_done;
 				set_s2_waddr = set_s2_waddr;
-			end
-			
-			// if NEXT clock cycle past dims, request to load new row
-			// otherwise loop in this state
-			/*if (col_prep_oob) begin
-				if (~last_row_flag) begin
-					// increment current input address
-					// load in NEXT row of input
-					current_input_addr = p_current_input_addr + incr;
-					dut_sram_read_address = current_input_addr;
-				end else begin
-					// stays the same
-					current_input_addr = p_current_input_addr;
-					dut_sram_read_address = dut_sram_read_address;
-				end
-				// next state
-				next_state = S9;
-			end else begin
-				// next state
-				next_state = S8;
 			end*/
 			
 			// if NEXT clock cycle past dims, request to load new row
 			// otherwise loop in this state
 			if (col_prep_oob & ~last_row_flag) begin
 				// increment read address
-				// load in NEXT row of input
 				current_input_addr = p_current_input_addr + incr;
+				// load in NEXT row of input
 				dut_sram_read_address = current_input_addr;
 			end else begin
 				// retain values
@@ -617,8 +611,8 @@ begin
 			// retain read address
 			current_input_addr = p_current_input_addr;
 			
-			// stop rippling done flag
-			set_s2_done = low;
+			/*// stop rippling done flag
+			set_s2_done = low;*/
 			
 			if (~last_row_flag) begin
 				// increase row counter
@@ -715,6 +709,12 @@ end
 
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
+// when to set dut to busy
+assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
+
+// load weights flag
+assign load_weights = (current_state == S4) ? high : low;
+
 // weight wires
 assign w02 = (current_state == S4) ? weight_data[2] : p_w02;
 assign w01 = (current_state == S4) ? weight_data[1] : p_w01;
@@ -732,20 +732,18 @@ assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
 assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
 assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
-// load weights flag
-assign load_weights = (current_state == S4) ? high : low;
+// values are loaded in and ready to output
+assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
 
 // convolution indicicator
 assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
 
-// when to set dut to busy
-assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
-
-// values are loaded in and ready to output
-assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
-
 // return same state indicator 
 assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
+
+// done flag to be pipelined
+assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+assign set_s2_waddr = ((current_state == S8) & ~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
 
