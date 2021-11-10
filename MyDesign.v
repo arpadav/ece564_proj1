@@ -242,14 +242,15 @@ wire set_data_flag;
 // input data
 
 // flag to tell each convolution module to pass through data
-wire conv_go;
+// wire conv_go;
+reg conv_go;
 reg p_conv_go;
 // flag to tell each convolution module to pass through data
 
 // pipelined down to the point where take outputs into account
-wire loaded_for_sweep;
-reg loaded_for_sweep;
-reg p_loaded_for_sweep;
+//wire loaded_for_sweep;
+// reg loaded_for_sweep;
+// reg p_loaded_for_sweep;
 // pipelined down to the point where take outputs into account
 
 // same state indicator
@@ -343,7 +344,7 @@ always@(posedge clk or negedge reset_b)
 		// reset convolution indicator
 		p_conv_go <= low;
 		// reset rippled down indicator
-		p_loaded_for_sweep <= low;
+		// p_loaded_for_sweep <= low;
 		// reset same state indicator
 		p_same_state_flag <= low;
 		
@@ -427,7 +428,7 @@ always@(posedge clk or negedge reset_b)
 		// set convolution indicator
 		p_conv_go <= conv_go;
 		// set rippled down indicator
-		p_loaded_for_sweep <= loaded_for_sweep;
+		// p_loaded_for_sweep <= loaded_for_sweep;
 		// set same state indicator
 		p_same_state_flag <= same_state_flag;
 	end
@@ -462,7 +463,10 @@ begin
 			dut_wmem_read_address = addr_init;
 			
 			// reset loaded for sweep
-			loaded_for_sweep = low;
+			// loaded_for_sweep = low;
+			
+			// reset convolution indicicator
+			conv_go = low;
 			
 			// next state
 			next_state = dut_run ? S1 : S0;
@@ -489,7 +493,10 @@ begin
 			dut_wmem_read_address = weights_dims_addr;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// next state
 			next_state = S2;
@@ -516,7 +523,10 @@ begin
 			dut_wmem_read_address = weights_data_addr;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// next state, potentially done
 			next_state = end_condition_met ? S0 : S3;
@@ -543,7 +553,10 @@ begin
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// next state
 			next_state = S4;
@@ -570,7 +583,10 @@ begin
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// next state
 			next_state = S5;
@@ -597,7 +613,10 @@ begin
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// next state
 			next_state = S6;
@@ -624,7 +643,10 @@ begin
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// next state
 			next_state = S7;
@@ -653,7 +675,10 @@ begin
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+
+			// set convolution indicicator
+			conv_go = high;
 			
 			// next state
 			next_state = S8;
@@ -688,7 +713,10 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
+//assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
+
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
@@ -705,8 +733,12 @@ assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : 
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
 			
+			// set convolution indicicator
+			conv_go = last_row_flag ? low : high;
+// assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
+
 			if (~last_row_flag) begin
 				// increase row counter
 				ridx_counter = p_ridx_counter + incr;
@@ -760,7 +792,10 @@ assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : 
 			dut_wmem_read_address = addr_init;
 			
 			// retain loaded for sweep
-			loaded_for_sweep = p_loaded_for_sweep;
+			// loaded_for_sweep = p_loaded_for_sweep;
+			
+			// retain convolution indicicator
+			conv_go = p_conv_go;
 			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
@@ -801,7 +836,10 @@ assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : 
 			dut_wmem_read_address = addr_init;
 			
 			// reset loaded for sweep
-			loaded_for_sweep = low;
+			// loaded_for_sweep = low;
+			
+			// reset convolution indicicator
+			conv_go = low;
 			
 			// next state
 			next_state = S0;
@@ -873,15 +911,18 @@ assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
 */
 
-// convolution indicicator
+/*// convolution indicicator
 assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
+*/
 
 // return same state indicator 
 assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
 
 // done flag to be pipelined
-assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
-assign set_s2_waddr = ((current_state == S8) & ~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
+// assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims - incr) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+// assign set_s2_waddr = ((current_state == S8) & ~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
+assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
 
