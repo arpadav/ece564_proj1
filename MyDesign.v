@@ -248,6 +248,7 @@ reg p_conv_go;
 
 // pipelined down to the point where take outputs into account
 wire loaded_for_sweep;
+reg loaded_for_sweep;
 reg p_loaded_for_sweep;
 // pipelined down to the point where take outputs into account
 
@@ -433,6 +434,7 @@ always@(posedge clk or negedge reset_b)
 // ========== FSM FLIP-FLOPS ==========
 // ========== FSM FLIP-FLOPS ==========
 
+
 // ========== FSM STATES ==========
 // ========== FSM STATES ==========
 always@(current_state or dut_run or p_same_state_flag)
@@ -459,6 +461,9 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
+			// reset loaded for sweep
+			loaded_for_sweep = low;
+			
 			// next state
 			next_state = dut_run ? S1 : S0;
 		end
@@ -482,6 +487,9 @@ begin
 			
 			// load in weights dimensions
 			dut_wmem_read_address = weights_dims_addr;
+			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
 			
 			// next state
 			next_state = S2;
@@ -507,6 +515,9 @@ begin
 			// load in weights data
 			dut_wmem_read_address = weights_data_addr;
 			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
+			
 			// next state, potentially done
 			next_state = end_condition_met ? S0 : S3;
 		end
@@ -530,6 +541,9 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
+			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
 			
 			// next state
 			next_state = S4;
@@ -555,6 +569,9 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
+			
 			// next state
 			next_state = S5;
 		end
@@ -579,6 +596,9 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
+			
 			// next state
 			next_state = S6;
 		end
@@ -602,6 +622,9 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
+			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
 			
 			// next state
 			next_state = S7;
@@ -628,6 +651,9 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
+			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
 			
 			// next state
 			next_state = S8;
@@ -662,6 +688,8 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
+assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
+
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
 		end
@@ -675,6 +703,9 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
+			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
 			
 			if (~last_row_flag) begin
 				// increase row counter
@@ -728,6 +759,9 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
+			// retain loaded for sweep
+			loaded_for_sweep = p_loaded_for_sweep;
+			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
 				// retain read and write address
@@ -765,6 +799,9 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
+			
+			// reset loaded for sweep
+			loaded_for_sweep = low;
 			
 			// next state
 			next_state = S0;
@@ -832,8 +869,9 @@ assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
 assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
 assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
-// values are loaded in and ready to output
+/*// values are loaded in and ready to output
 assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
+*/
 
 // convolution indicicator
 assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
