@@ -438,7 +438,7 @@ always@(posedge clk or negedge reset_b)
 
 // ========== FSM STATES ==========
 // ========== FSM STATES ==========
-always@(current_state or dut_run or p_same_state_flag)
+always@(current_state or p_same_state_flag) // current_state or dut_run or 
 begin
 	case(current_state)
 		// begin state, look for when to run
@@ -916,7 +916,8 @@ assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((curren
 */
 
 // return same state indicator 
-assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
+// assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
+assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_same_state_flag;
 
 // done flag to be pipelined
 // assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
