@@ -25,11 +25,13 @@ input clk;
 
 // dut -> sram (input)
 output reg [11:0] dut_sram_read_address;
+reg [11:0] p_dut_sram_read_address;
 // sram -> dut (input)
 input [15:0] sram_dut_read_data;
 
 // dut -> sram (weights)
 output reg [11:0] dut_wmem_read_address;
+reg [11:0] p_dut_wmem_read_address;
 // sram -> dut (weights)
 input [15:0] wmem_dut_read_data;
 
@@ -272,6 +274,8 @@ always@(posedge clk or negedge reset_b)
 		// reset outputs
 		dut_sram_write_address <= addr_init;
 		dut_sram_write_data <= data_init;
+		p_dut_sram_read_address <= addr_init;
+		p_dut_wmem_read_address <= addr_init;
 		// reset temporary output register
 		p_output_row_temp <= data_init;
 		
@@ -354,6 +358,8 @@ always@(posedge clk or negedge reset_b)
 		// set outputs
 		dut_sram_write_address <= set_dut_sram_write_address;
 		dut_sram_write_data <= set_dut_sram_write_data;
+		p_dut_sram_read_address <= dut_sram_read_address;
+		p_dut_wmem_read_address <= dut_wmem_read_address;
 		// set temporary output register
 		p_output_row_temp <= output_row_temp;
 		
@@ -447,6 +453,12 @@ begin
 			input_r1 = data_init;
 			input_r2 = data_init;
 			
+			// reset input read address interface
+			dut_sram_read_address = addr_init;
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
+			
 			// next state
 			next_state = dut_run ? S1 : S0;
 		end
@@ -465,11 +477,11 @@ begin
 			input_r1 = p_input_r1;
 			input_r2 = p_input_r2;
 			
-			// load in weights dimensions
-			dut_wmem_read_address = weights_dims_addr;
-			
 			// load in input dimension 1 (rows)
 			dut_sram_read_address = current_input_addr;
+			
+			// load in weights dimensions
+			dut_wmem_read_address = weights_dims_addr;
 			
 			// next state
 			next_state = S2;
@@ -492,25 +504,11 @@ begin
 			// load in input dimension 2 (columns)
 			dut_sram_read_address = current_input_addr;
 			
-			/*// store weights dimensions
-			weight_dims = wmem_dut_read_data - incr;*/
-			
-			/*// store input dimension 1 (rows)
-			input_num_rows = sram_dut_read_data - incr;*/
-			
 			// load in weights data
 			dut_wmem_read_address = weights_data_addr;
 			
 			// next state, potentially done
 			next_state = end_condition_met ? S0 : S3;
-			/*if (end_condition_met) begin
-				// done
-				// next state
-				next_state = S0;
-			end else begin
-				// next state
-				next_state = S3;
-			end*/
 		end
 		
 		S3: begin
@@ -530,11 +528,8 @@ begin
 			// load in FIRST row of input
 			dut_sram_read_address = current_input_addr;
 			
-			/*// store weights data
-			weight_data = wmem_dut_read_data;*/
-			
-			/*// store input dimension 2 (cols)
-			input_num_cols = sram_dut_read_data - incr;*/
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// next state
 			next_state = S4;
@@ -557,8 +552,8 @@ begin
 			// load in SECOND row of input
 			dut_sram_read_address = current_input_addr;
 			
-			/*// store FIRST row of input
-			input_r0 = sram_dut_read_data;*/
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// next state
 			next_state = S5;
@@ -581,8 +576,8 @@ begin
 			// load in THIRD row of input
 			dut_sram_read_address = current_input_addr;
 			
-			/*// store SECOND row of input
-			input_r1 = sram_dut_read_data;*/
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// next state
 			next_state = S6;
@@ -602,8 +597,11 @@ begin
 			input_r1 = p_input_r1;
 			input_r2 = sram_dut_read_data;
 			
-			/*// store THIRD row of input
-			input_r2 = sram_dut_read_data;*/
+			// retain input read address
+			dut_sram_read_address = p_dut_sram_read_address;
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// next state
 			next_state = S7;
@@ -624,6 +622,12 @@ begin
 			input_r0 = p_input_r0;
 			input_r1 = p_input_r1;
 			input_r2 = p_input_r2;
+			
+			// retain input read address
+			dut_sram_read_address = p_dut_sram_read_address;
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// next state
 			next_state = S8;
@@ -652,8 +656,11 @@ begin
 			end else begin
 				// retain values
 				current_input_addr = p_current_input_addr;
-				dut_sram_read_address = dut_sram_read_address;
+				dut_sram_read_address = p_dut_sram_read_address;
 			end
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
@@ -665,6 +672,9 @@ begin
 			
 			// retain read address
 			current_input_addr = p_current_input_addr;
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			if (~last_row_flag) begin
 				// increase row counter
@@ -679,6 +689,9 @@ begin
 				// increment write address
 				output_write_addr = p_output_write_addr + incr;
 				
+				// retain input read address
+				dut_sram_read_address = p_dut_sram_read_address;
+			
 				// go back to sweeping
 				next_state = S7;
 			end else begin
@@ -690,6 +703,9 @@ begin
 				input_r1 = p_input_r1;
 				input_r2 = p_input_r2;
 				output_write_addr = p_output_write_addr;
+				
+				// reset input read address interface
+				dut_sram_read_address = addr_init;
 				
 				// end, wrap up
 				next_state = SA;
@@ -705,6 +721,12 @@ begin
 			input_r0 = p_input_r0;
 			input_r1 = p_input_r1;
 			input_r2 = p_input_r2;
+			
+			// reset input read address interface
+			dut_sram_read_address = addr_init;
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
 			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
@@ -725,9 +747,6 @@ begin
 		default: begin
 			// defaults
 			
-			// next state
-			next_state = S0;
-			
 			// reset counters
 			ridx_counter = data_init;
 			cidx_counter = data_init;
@@ -740,6 +759,15 @@ begin
 			input_r0 = data_init;
 			input_r1 = data_init;
 			input_r2 = data_init;
+			
+			// reset input read address interface
+			dut_sram_read_address = addr_init;
+			
+			// reset weight read address interface
+			dut_wmem_read_address = addr_init;
+			
+			// next state
+			next_state = S0;
 		end
 	endcase
 end
@@ -783,9 +811,6 @@ assign weight_data = (current_state == S3) ? wmem_dut_read_data : p_weight_data;
 // reading input information
 assign input_num_rows = (current_state == S2) ? sram_dut_read_data - incr : p_input_num_rows;
 assign input_num_cols = (current_state == S3) ? sram_dut_read_data - incr : p_input_num_cols;
-// assign input_r0 = (current_state == S4) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r1 : p_input_r0);
-// assign input_r1 = (current_state == S5) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r2 : p_input_r1);
-// assign input_r2 = (current_state == S6) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? sram_dut_read_data : p_input_r2);
 
 // load weights flag
 assign load_weights = (current_state == S4) ? high : low;
