@@ -97,8 +97,10 @@ parameter [3:0]
 reg [3:0] current_state, next_state;
 
 // store weight dimensions, data
-reg [15:0] weight_dims;
-reg [15:0] weight_data;
+wire [15:0] weight_dims;
+wire [15:0] weight_data;
+reg [15:0] p_weight_dims;
+reg [15:0] p_weight_data;
 
 // store current read and write address
 reg [11:0] current_input_addr;
@@ -107,14 +109,19 @@ reg [11:0] p_current_input_addr;
 reg [11:0] p_output_write_addr;
 
 // store number of input rows, columns
-reg [15:0] input_num_rows;
-reg [15:0] input_num_cols;
+wire [15:0] input_num_rows;
+wire [15:0] input_num_cols;
+reg [15:0] p_input_num_rows;
+reg [15:0] p_input_num_cols;
 
 // store first, second, third row of input
 // (hardcoded because kernel limited to 3x3)
-reg [15:0] input_r0;
-reg [15:0] input_r1;
-reg [15:0] input_r2;
+wire [15:0] input_r0;
+wire [15:0] input_r1;
+wire [15:0] input_r2;
+reg [15:0] p_input_r0;
+reg [15:0] p_input_r1;
+reg [15:0] p_input_r2;
 
 // row and column counters
 reg [15:0] ridx_counter;
@@ -250,7 +257,8 @@ reg p_same_state_flag;
 // ========== REG/WIRE PAIRS ==========
 
 
-// FSM flip-flops
+// ========== FSM FLIP-FLOPS ==========
+// ========== FSM FLIP-FLOPS ==========
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) begin
 		// starting state
@@ -266,6 +274,16 @@ always@(posedge clk or negedge reset_b)
 		dut_sram_write_data <= data_init;
 		// reset temporary output register
 		p_output_row_temp <= data_init;
+		
+		// reset weight information
+		p_weight_dims <= data_init;
+		p_weight_data <= data_init;
+		// reset input information
+		p_input_num_rows <= data_init;
+		p_input_num_cols <= data_init;
+		p_input_r0 <= data_init;
+		p_input_r1 <= data_init;
+		p_input_r2 <= data_init;
 		
 		// reset counters
 		p_ridx_counter <= data_init;
@@ -339,6 +357,16 @@ always@(posedge clk or negedge reset_b)
 		// set temporary output register
 		p_output_row_temp <= output_row_temp;
 		
+		// set weight information
+		p_weight_dims <= weight_dims;
+		p_weight_data <= weight_data;
+		// set input information
+		p_input_num_rows <= input_num_rows;
+		p_input_num_cols <= input_num_cols;
+		p_input_r0 <= input_r0;
+		p_input_r1 <= input_r1;
+		p_input_r2 <= input_r2;
+		
 		// set counters
 		p_ridx_counter <= ridx_counter;
 		p_cidx_counter <= cidx_counter;
@@ -396,8 +424,11 @@ always@(posedge clk or negedge reset_b)
 		// set same state indicator
 		p_same_state_flag <= same_state_flag;
 	end
+// ========== FSM FLIP-FLOPS ==========
+// ========== FSM FLIP-FLOPS ==========
 
-// FSM states
+// ========== FSM STATES ==========
+// ========== FSM STATES ==========
 always@(current_state or dut_run or p_same_state_flag)
 begin
 	case(current_state)
@@ -410,10 +441,6 @@ begin
 			// reset read and write address
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
-			
-			// reset adder ripple 
-			// set_s2_done = low;
-			// set_s2_waddr = addr_init;
 			
 			// next state
 			next_state = dut_run ? S1 : S0;
@@ -450,24 +477,25 @@ begin
 			// load in input dimension 2 (columns)
 			dut_sram_read_address = current_input_addr;
 			
-			// store weights dimensions
-			weight_dims = wmem_dut_read_data - incr;
+			/*// store weights dimensions
+			weight_dims = wmem_dut_read_data - incr;*/
 			
-			// store input dimension 1 (rows)
-			input_num_rows = sram_dut_read_data - incr;
+			/*// store input dimension 1 (rows)
+			input_num_rows = sram_dut_read_data - incr;*/
 			
 			// load in weights data
 			dut_wmem_read_address = weights_data_addr;
 			
-			// if (sram_dut_read_data == end_condition) begin
-			if (end_condition_met) begin
+			// next state, potentially done
+			next_state = end_condition_met ? S0 : S3;
+			/*if (end_condition_met) begin
 				// done
 				// next state
 				next_state = S0;
 			end else begin
 				// next state
 				next_state = S3;
-			end
+			end*/
 		end
 		
 		S3: begin
@@ -482,11 +510,11 @@ begin
 			// load in FIRST row of input
 			dut_sram_read_address = current_input_addr;
 			
-			// store weights data
-			weight_data = wmem_dut_read_data;
+			/*// store weights data
+			weight_data = wmem_dut_read_data;*/
 			
-			// store input dimension 2 (cols)
-			input_num_cols = sram_dut_read_data - incr;
+			/*// store input dimension 2 (cols)
+			input_num_cols = sram_dut_read_data - incr;*/
 			
 			// next state
 			next_state = S4;
@@ -504,8 +532,8 @@ begin
 			// load in SECOND row of input
 			dut_sram_read_address = current_input_addr;
 			
-			// store FIRST row of input
-			input_r0 = sram_dut_read_data;
+			/*// store FIRST row of input
+			input_r0 = sram_dut_read_data;*/
 			
 			// next state
 			next_state = S5;
@@ -523,8 +551,8 @@ begin
 			// load in THIRD row of input
 			dut_sram_read_address = current_input_addr;
 			
-			// store SECOND row of input
-			input_r1 = sram_dut_read_data;
+			/*// store SECOND row of input
+			input_r1 = sram_dut_read_data;*/
 			
 			// next state
 			next_state = S6;
@@ -539,8 +567,8 @@ begin
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
 			
-			// store THIRD row of input
-			input_r2 = sram_dut_read_data;
+			/*// store THIRD row of input
+			input_r2 = sram_dut_read_data;*/
 			
 			// next state
 			next_state = S7;
@@ -569,24 +597,6 @@ begin
 			// retain write address
 			output_write_addr = p_output_write_addr;
 			
-			/*if (~p_loaded_for_sweep) begin				
-				if (cidx_counter == weight_dims - incr) begin
-					// ripple done flag through adders
-					// set_s2_done = high;
-					set_s2_waddr = output_write_addr;
-				end else begin
-					// not done
-					// set_s2_done = set_s2_done;
-					set_s2_waddr = set_s2_waddr;
-				end
-			end else begin
-				// stay low
-				// loaded_for_sweep = low;
-				// keep same
-				// set_s2_done = set_s2_done;
-				set_s2_waddr = set_s2_waddr;
-			end*/
-			
 			// if NEXT clock cycle past dims, request to load new row
 			// otherwise loop in this state
 			if (col_prep_oob & ~last_row_flag) begin
@@ -611,18 +621,15 @@ begin
 			// retain read address
 			current_input_addr = p_current_input_addr;
 			
-			/*// stop rippling done flag
-			set_s2_done = low;*/
-			
 			if (~last_row_flag) begin
 				// increase row counter
 				ridx_counter = p_ridx_counter + incr;
 				
-				// propagate rows upward
+				/*// propagate rows upward
 				input_r0 = input_r1;
 				input_r1 = input_r2;
 				// store NEXT row of input
-				input_r2 = sram_dut_read_data;
+				input_r2 = sram_dut_read_data;*/
 				
 				// increment write address
 				output_write_addr = p_output_write_addr + incr;
@@ -633,10 +640,10 @@ begin
 				// reset row counter
 				ridx_counter = data_init;
 				
-				// retain values
+				/*// retain values
 				input_r0 = input_r0;
 				input_r1 = input_r1;
-				input_r2 = input_r2;
+				input_r2 = input_r2;*/
 				output_write_addr = p_output_write_addr;
 				
 				// end, wrap up
@@ -681,6 +688,8 @@ begin
 		end
 	endcase
 end
+// ========== FSM STATES ==========
+// ========== FSM STATES ==========
 
 // using register + always@* statement, because individual addresses
 // are being called instead of the entire register
@@ -712,19 +721,30 @@ end
 // when to set dut to busy
 assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
 
+// reading weight information
+assign weight_dims = (current_state == S2) ? wmem_dut_read_data - incr : p_weight_dims;
+assign weight_data = (current_state == S3) ? wmem_dut_read_data : p_weight_data;
+
+// reading input information
+assign input_num_rows = (current_state == S2) ? sram_dut_read_data - incr : p_input_num_rows;
+assign input_num_cols = (current_state == S3) ? sram_dut_read_data - incr : p_input_num_cols;
+assign input_r0 = (current_state == S0) ? data_init : ((current_state == S4) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r1 : p_input_r0));
+assign input_r1 = (current_state == S0) ? data_init : ((current_state == S5) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r2 : p_input_r1));
+assign input_r2 = (current_state == S0) ? data_init : ((current_state == S6) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? sram_dut_read_data : p_input_r2));
+
 // load weights flag
 assign load_weights = (current_state == S4) ? high : low;
 
 // weight wires
-assign w02 = (current_state == S4) ? weight_data[2] : p_w02;
-assign w01 = (current_state == S4) ? weight_data[1] : p_w01;
-assign w00 = (current_state == S4) ? weight_data[0] : p_w00;
-assign w12 = (current_state == S4) ? weight_data[5] : p_w12;
-assign w11 = (current_state == S4) ? weight_data[4] : p_w11;
-assign w10 = (current_state == S4) ? weight_data[3] : p_w10;
-assign w22 = (current_state == S4) ? weight_data[8] : p_w22;
-assign w21 = (current_state == S4) ? weight_data[7] : p_w21;
-assign w20 = (current_state == S4) ? weight_data[6] : p_w20;
+assign w02 = (current_state == S4) ? p_weight_data[2] : p_w02;
+assign w01 = (current_state == S4) ? p_weight_data[1] : p_w01;
+assign w00 = (current_state == S4) ? p_weight_data[0] : p_w00;
+assign w12 = (current_state == S4) ? p_weight_data[5] : p_w12;
+assign w11 = (current_state == S4) ? p_weight_data[4] : p_w11;
+assign w10 = (current_state == S4) ? p_weight_data[3] : p_w10;
+assign w22 = (current_state == S4) ? p_weight_data[8] : p_w22;
+assign w21 = (current_state == S4) ? p_weight_data[7] : p_w21;
+assign w20 = (current_state == S4) ? p_weight_data[6] : p_w20;
 
 // data wires
 assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9);
