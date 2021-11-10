@@ -116,9 +116,9 @@ reg [15:0] p_input_num_cols;
 
 // store first, second, third row of input
 // (hardcoded because kernel limited to 3x3)
-wire [15:0] input_r0;
-wire [15:0] input_r1;
-wire [15:0] input_r2;
+reg [15:0] input_r0;
+reg [15:0] input_r1;
+reg [15:0] input_r2;
 reg [15:0] p_input_r0;
 reg [15:0] p_input_r1;
 reg [15:0] p_input_r2;
@@ -442,6 +442,11 @@ begin
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
 			
+			// reset three input registers
+			input_r0 = data_init;
+			input_r1 = data_init;
+			input_r2 = data_init;
+			
 			// next state
 			next_state = dut_run ? S1 : S0;
 		end
@@ -454,6 +459,11 @@ begin
 			// retain read and write address
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain three input registers
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
 			
 			// load in weights dimensions
 			dut_wmem_read_address = weights_dims_addr;
@@ -473,6 +483,11 @@ begin
 			// increment read address. retain write address
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain three input registers
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
 			
 			// load in input dimension 2 (columns)
 			dut_sram_read_address = current_input_addr;
@@ -507,6 +522,11 @@ begin
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
 			
+			// retain three input registers
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
+			
 			// load in FIRST row of input
 			dut_sram_read_address = current_input_addr;
 			
@@ -529,6 +549,11 @@ begin
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
 			
+			// input first row
+			input_r0 = sram_dut_read_data;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
+			
 			// load in SECOND row of input
 			dut_sram_read_address = current_input_addr;
 			
@@ -547,6 +572,11 @@ begin
 			// increment read address. retain write address
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
+			
+			// input second row
+			input_r0 = p_input_r0;
+			input_r1 = sram_dut_read_data;
+			input_r2 = p_input_r2;
 			
 			// load in THIRD row of input
 			dut_sram_read_address = current_input_addr;
@@ -567,6 +597,11 @@ begin
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
 			
+			// input third row
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = sram_dut_read_data;
+			
 			/*// store THIRD row of input
 			input_r2 = sram_dut_read_data;*/
 			
@@ -585,6 +620,11 @@ begin
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
 			
+			// retain three input registers
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
+			
 			// next state
 			next_state = S8;
 		end
@@ -596,6 +636,11 @@ begin
 			
 			// retain write address
 			output_write_addr = p_output_write_addr;
+			
+			// retain three input registers
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
 			
 			// if NEXT clock cycle past dims, request to load new row
 			// otherwise loop in this state
@@ -625,11 +670,11 @@ begin
 				// increase row counter
 				ridx_counter = p_ridx_counter + incr;
 				
-				/*// propagate rows upward
-				input_r0 = input_r1;
-				input_r1 = input_r2;
+				// propagate rows upward
+				input_r0 = p_input_r1;
+				input_r1 = p_input_r2;
 				// store NEXT row of input
-				input_r2 = sram_dut_read_data;*/
+				input_r2 = sram_dut_read_data;
 				
 				// increment write address
 				output_write_addr = p_output_write_addr + incr;
@@ -640,10 +685,10 @@ begin
 				// reset row counter
 				ridx_counter = data_init;
 				
-				/*// retain values
-				input_r0 = input_r0;
-				input_r1 = input_r1;
-				input_r2 = input_r2;*/
+				// retain values
+				input_r0 = p_input_r0;
+				input_r1 = p_input_r1;
+				input_r2 = p_input_r2;
 				output_write_addr = p_output_write_addr;
 				
 				// end, wrap up
@@ -655,6 +700,11 @@ begin
 			// counters retain value
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
+			
+			// retain three input registers
+			input_r0 = p_input_r0;
+			input_r1 = p_input_r1;
+			input_r2 = p_input_r2;
 			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
@@ -685,6 +735,11 @@ begin
 			// reset read and write address
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
+			
+			// reset three input registers
+			input_r0 = data_init;
+			input_r1 = data_init;
+			input_r2 = data_init;
 		end
 	endcase
 end
@@ -728,9 +783,9 @@ assign weight_data = (current_state == S3) ? wmem_dut_read_data : p_weight_data;
 // reading input information
 assign input_num_rows = (current_state == S2) ? sram_dut_read_data - incr : p_input_num_rows;
 assign input_num_cols = (current_state == S3) ? sram_dut_read_data - incr : p_input_num_cols;
-assign input_r0 = (current_state == S0) ? data_init : ((current_state == S4) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r1 : p_input_r0));
-assign input_r1 = (current_state == S0) ? data_init : ((current_state == S5) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r2 : p_input_r1));
-assign input_r2 = (current_state == S0) ? data_init : ((current_state == S6) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? sram_dut_read_data : p_input_r2));
+// assign input_r0 = (current_state == S4) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r1 : p_input_r0);
+// assign input_r1 = (current_state == S5) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? p_input_r2 : p_input_r1);
+// assign input_r2 = (current_state == S6) ? sram_dut_read_data : (((current_state == S9) & ~last_row_flag) ? sram_dut_read_data : p_input_r2);
 
 // load weights flag
 assign load_weights = (current_state == S4) ? high : low;
@@ -784,7 +839,7 @@ assign negedge_done = (~s3_done & prev_s3_done);
 // when set stored flag, write, etc
 assign set_dut_sram_write_enable = finished_storing ? low : (negedge_done ? high : dut_sram_write_enable);
 assign set_dut_sram_write_address = negedge_done ? s3_waddr : dut_sram_write_address;
-assign set_dut_sram_write_data = negedge_done ? output_row_temp : dut_sram_write_data;
+assign set_dut_sram_write_data = negedge_done ? p_output_row_temp : dut_sram_write_data;
 
 // negative flag of currently rippled value
 // if value 5 or more, then negative. otherwise, positive
