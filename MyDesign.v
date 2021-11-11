@@ -236,7 +236,8 @@ reg p_w22, p_w21, p_w20;
 // weights (kernel limited to 3x3, so hardcoding)
 
 // input data
-wire d02, d12, d22;
+// wire d02, d12, d22;
+reg d02, d12, d22;
 reg p_d02, p_d12, p_d22;
 wire set_data_flag;
 // input data
@@ -468,6 +469,11 @@ begin
 			// reset convolution indicicator
 			conv_go = low;
 			
+			// reset data inputs
+			d02 = low;
+			d12 = low;
+			d22 = low;
+			
 			// next state
 			next_state = dut_run ? S1 : S0;
 		end
@@ -497,6 +503,11 @@ begin
 			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
+			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
 			
 			// next state
 			next_state = S2;
@@ -528,6 +539,11 @@ begin
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
+			
 			// next state, potentially done
 			next_state = end_condition_met ? S0 : S3;
 		end
@@ -557,6 +573,11 @@ begin
 			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
+			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
 			
 			// next state
 			next_state = S4;
@@ -588,6 +609,11 @@ begin
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
+			
 			// next state
 			next_state = S5;
 		end
@@ -618,6 +644,11 @@ begin
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
+			
 			// next state
 			next_state = S6;
 		end
@@ -647,6 +678,11 @@ begin
 			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
+			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
 			
 			// next state
 			next_state = S7;
@@ -679,6 +715,11 @@ begin
 
 			// set convolution indicicator
 			conv_go = high;
+			
+			// set data inputs
+			d02 = p_input_r0[cidx_counter[3:0]];
+			d12 = p_input_r1[cidx_counter[3:0]];
+			d22 = p_input_r2[cidx_counter[3:0]];
 			
 			// next state
 			next_state = S8;
@@ -718,6 +759,11 @@ begin
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 
+			// set data inputs
+			d02 = p_input_r0[cidx_counter[3:0]];
+			d12 = p_input_r1[cidx_counter[3:0]];
+			d22 = p_input_r2[cidx_counter[3:0]];
+			
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
 		end
@@ -738,6 +784,14 @@ begin
 			// set convolution indicicator
 			conv_go = last_row_flag ? low : high;
 // assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
+
+			// set data inputs
+			d02 = p_input_r0[cidx_counter[3:0]];
+			d12 = p_input_r1[cidx_counter[3:0]];
+			d22 = p_input_r2[cidx_counter[3:0]];
+// assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
+// assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
+// assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
 			if (~last_row_flag) begin
 				// increase row counter
@@ -797,6 +851,11 @@ begin
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
+			// retain data inputs
+			d02 = p_d02;
+			d12 = p_d12;
+			d22 = p_d22;
+			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
 				// retain read and write address
@@ -840,6 +899,11 @@ begin
 			
 			// reset convolution indicicator
 			conv_go = low;
+			
+			// reset data inputs
+			d02 = low;
+			d12 = low;
+			d22 = low;
 			
 			// next state
 			next_state = S0;
@@ -902,10 +966,10 @@ assign w21 = (current_state == S4) ? p_weight_data[7] : p_w21;
 assign w20 = (current_state == S4) ? p_weight_data[6] : p_w20;
 
 // data wires
-assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9);
-assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
-assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
-assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
+// assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9);
+// assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
+// assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
+// assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
 /*// values are loaded in and ready to output
 assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
