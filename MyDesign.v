@@ -202,6 +202,7 @@ wire FA2_s2_fours;
 
 // flag to load in weights to convolution modules
 wire load_weights;
+reg p_load_weights;
 
 // row and column out-of-bounds flags
 wire last_row_flag;
@@ -239,7 +240,7 @@ reg p_w22, p_w21, p_w20;
 // wire d02, d12, d22;
 reg d02, d12, d22;
 reg p_d02, p_d12, p_d22;
-wire set_data_flag;
+// wire set_data_flag;
 // input data
 
 // flag to tell each convolution module to pass through data
