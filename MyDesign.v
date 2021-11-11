@@ -348,6 +348,8 @@ always@(posedge clk or negedge reset_b)
 		// p_loaded_for_sweep <= low;
 		// reset same state indicator
 		p_same_state_flag <= low;
+		// reset when to load weights
+		p_load_weights <= low;
 		
 	end else begin
 		// next state
@@ -432,6 +434,8 @@ always@(posedge clk or negedge reset_b)
 		// p_loaded_for_sweep <= loaded_for_sweep;
 		// set same state indicator
 		p_same_state_flag <= same_state_flag;
+		// set when to load weights
+		p_load_weights <= load_weights;
 	end
 // ========== FSM FLIP-FLOPS ==========
 // ========== FSM FLIP-FLOPS ==========
@@ -1030,17 +1034,26 @@ assign end_condition_met = (sram_dut_read_data == end_condition);
 // [dyx] -> m22, m21, m20 ->
 //  --> --> --> --> --> -->
 // first row
-conv_module m02 (clk, reset_b, conv_go, load_weights, w02, d02, top_pipeline_idx, output_write_addr, cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
-conv_module m01 (clk, reset_b, conv_go, load_weights, w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
-conv_module m00 (clk, reset_b, conv_go, load_weights, w00, d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
+// conv_module m02 (clk, reset_b, conv_go, load_weights, w02, d02, top_pipeline_idx, output_write_addr, cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
+// conv_module m01 (clk, reset_b, conv_go, load_weights, w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
+// conv_module m00 (clk, reset_b, conv_go, load_weights, w00, d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
+conv_module m02 (clk, reset_b, p_conv_go, p_load_weights, p_w02, p_d02, top_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
+conv_module m01 (clk, reset_b, p_conv_go, p_load_weights, p_w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
+conv_module m00 (clk, reset_b, p_conv_go, p_load_weights, p_w00, d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
 // second row
-conv_module m12 (clk, reset_b, conv_go, load_weights, w12, d12, rest_pipeline_idx, output_write_addr, cidx_counter[3:0], d12_out, waddr12_out, c12_out, n12);
-conv_module m11 (clk, reset_b, conv_go, load_weights, w11, d12_out, rest_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
-conv_module m10 (clk, reset_b, conv_go, load_weights, w10, d11_out, rest_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
+// conv_module m12 (clk, reset_b, conv_go, load_weights, w12, d12, rest_pipeline_idx, output_write_addr, cidx_counter[3:0], d12_out, waddr12_out, c12_out, n12);
+// conv_module m11 (clk, reset_b, conv_go, load_weights, w11, d12_out, rest_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
+// conv_module m10 (clk, reset_b, conv_go, load_weights, w10, d11_out, rest_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
+conv_module m12 (clk, reset_b, p_conv_go, p_load_weights, p_w12, p_d12, rest_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d12_out, waddr12_out, c12_out, n12);
+conv_module m11 (clk, reset_b, p_conv_go, p_load_weights, p_w11, d12_out, rest_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
+conv_module m10 (clk, reset_b, p_conv_go, p_load_weights, p_w10, d11_out, rest_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
 // third row
-conv_module m22 (clk, reset_b, conv_go, load_weights, w22, d22, rest_pipeline_idx, output_write_addr, cidx_counter[3:0], d22_out, waddr22_out, c22_out, n22);
-conv_module m21 (clk, reset_b, conv_go, load_weights, w21, d22_out, rest_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
-conv_module m20 (clk, reset_b, conv_go, load_weights, w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
+// conv_module m22 (clk, reset_b, conv_go, load_weights, w22, d22, rest_pipeline_idx, output_write_addr, cidx_counter[3:0], d22_out, waddr22_out, c22_out, n22);
+// conv_module m21 (clk, reset_b, conv_go, load_weights, w21, d22_out, rest_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
+// conv_module m20 (clk, reset_b, conv_go, load_weights, w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
+conv_module m22 (clk, reset_b, p_conv_go, p_load_weights, p_w22, p_d22, rest_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d22_out, waddr22_out, c22_out, n22);
+conv_module m21 (clk, reset_b, p_conv_go, p_load_weights, p_w21, d22_out, rest_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
+conv_module m20 (clk, reset_b, p_conv_go, p_load_weights, p_w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
 
 // instantiate adders for pos/neg calculation
 // input stage 1 -> output stage 2
