@@ -137,7 +137,10 @@ reg [15:0] p_output_row_temp;
 
 // stage 2 index and done flag
 reg s2_done;
-wire set_s2_done;
+// wire set_s2_done;
+reg set_s2_done;
+reg set_set_s2_done; 
+
 reg [3:0] s2_idx;
 reg [11:0] s2_waddr;
 wire [11:0] set_s2_waddr;
@@ -303,6 +306,7 @@ always@(posedge clk or negedge reset_b)
 		
 		// reset storage regs/flags stage 1 -> 2
 		// p_set_s2_done <= low;
+		set_s2_done <= low; 
 		s2_done <= low; 
 		s2_idx <= indx_init; 
 		s2_waddr <= addr_init; 
@@ -389,6 +393,7 @@ always@(posedge clk or negedge reset_b)
 		
 		// set storage regs/flags stage 1 -> 2
 		// p_set_s2_done <= set_s2_done;
+		set_s2_done <= set_set_s2_done; 
 		s2_done <= set_s2_done; 
 		s2_idx <= c00_out; 
 		s2_waddr <= set_s2_waddr; 
@@ -479,6 +484,9 @@ begin
 			d12 = low;
 			d22 = low;
 			
+			// reset done flag to be pipelined in full adders
+			set_set_s2_done = low;
+			
 			// next state
 			next_state = dut_run ? S1 : S0;
 		end
@@ -513,6 +521,9 @@ begin
 			d02 = p_d02;
 			d12 = p_d12;
 			d22 = p_d22;
+			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
 			
 			// next state
 			next_state = S2;
@@ -549,6 +560,9 @@ begin
 			d12 = p_d12;
 			d22 = p_d22;
 			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
+			
 			// next state, potentially done
 			next_state = end_condition_met ? S0 : S3;
 		end
@@ -583,6 +597,9 @@ begin
 			d02 = p_d02;
 			d12 = p_d12;
 			d22 = p_d22;
+			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
 			
 			// next state
 			next_state = S4;
@@ -619,6 +636,9 @@ begin
 			d12 = p_d12;
 			d22 = p_d22;
 			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
+			
 			// next state
 			next_state = S5;
 		end
@@ -654,6 +674,9 @@ begin
 			d12 = p_d12;
 			d22 = p_d22;
 			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
+			
 			// next state
 			next_state = S6;
 		end
@@ -688,6 +711,9 @@ begin
 			d02 = p_d02;
 			d12 = p_d12;
 			d22 = p_d22;
+			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
 			
 			// next state
 			next_state = S7;
@@ -725,6 +751,9 @@ begin
 			d02 = p_input_r0[cidx_counter[3:0]];
 			d12 = p_input_r1[cidx_counter[3:0]];
 			d22 = p_input_r2[cidx_counter[3:0]];
+			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
 			
 			// next state
 			next_state = S8;
@@ -769,6 +798,10 @@ begin
 			d12 = p_input_r1[cidx_counter[3:0]];
 			d22 = p_input_r2[cidx_counter[3:0]];
 			
+			// set done flag to be pipelined in full adders
+			set_set_s2_done = (cidx_counter == weight_dims - incr) ? high : set_s2_done;
+// assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
 		end
@@ -797,6 +830,10 @@ begin
 // assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
 // assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
 // assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
+
+			// reset done flag to be pipelined in full adders
+			set_set_s2_done = low;
+// assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
 
 			if (~last_row_flag) begin
 				// increase row counter
@@ -861,6 +898,9 @@ begin
 			d12 = p_d12;
 			d22 = p_d22;
 			
+			// retain done flag to be pipelined in full adders
+			set_set_s2_done = set_s2_done;
+			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
 				// retain read and write address
@@ -909,6 +949,9 @@ begin
 			d02 = low;
 			d12 = low;
 			d22 = low;
+			
+			// reset done flag to be pipelined in full adders
+			set_set_s2_done = low;
 			
 			// next state
 			next_state = S0;
@@ -990,7 +1033,7 @@ assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_
 
 // done flag to be pipelined
 // assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
-assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims - incr) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
 // assign set_s2_waddr = ((current_state == S8) & ~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 // ========== FSM WIRES ==========
