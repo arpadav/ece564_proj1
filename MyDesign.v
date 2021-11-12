@@ -17,7 +17,8 @@ module MyDesign (	dut_run,
 input dut_run;
 // set to 1 if calculating, 0 once done and stored
 output reg dut_busy;
-wire set_dut_busy;
+// wire set_dut_busy;
+reg set_dut_busy;
 
 // reset and clock
 input reset_b;
@@ -143,7 +144,8 @@ reg set_set_s2_done;
 
 reg [3:0] s2_idx;
 reg [11:0] s2_waddr;
-wire [11:0] set_s2_waddr;
+// wire [11:0] set_s2_waddr;
+reg [11:0] set_s2_waddr;
 
 // stage 3 index and done flag
 reg s3_done;
@@ -462,6 +464,9 @@ begin
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
 			
+			// reset pipelined write address
+			set_s2_waddr = addr_init;
+			
 			// reset three input registers
 			input_r0 = data_init;
 			input_r1 = data_init;
@@ -487,6 +492,11 @@ begin
 			// reset done flag to be pipelined in full adders
 			set_set_s2_done = low;
 			
+			// set set dut busy
+			set_dut_busy = dut_run ? high : low;
+// when to set dut to busy
+// assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
+
 			// next state
 			next_state = dut_run ? S1 : S0;
 		end
@@ -499,6 +509,9 @@ begin
 			// retain read and write address
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// retain three input registers
 			input_r0 = p_input_r0;
@@ -525,6 +538,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = S2;
 		end
@@ -537,6 +553,9 @@ begin
 			// increment read address. retain write address
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// retain three input registers
 			input_r0 = p_input_r0;
@@ -563,6 +582,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// set set dut busy
+			set_dut_busy = end_condition_met ? low : dut_busy;
+			
 			// next state, potentially done
 			next_state = end_condition_met ? S0 : S3;
 		end
@@ -575,6 +597,9 @@ begin
 			// increment read address. retain write address
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// retain three input registers
 			input_r0 = p_input_r0;
@@ -601,6 +626,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = S4;
 		end
@@ -613,6 +641,9 @@ begin
 			// increment read address. retain write address
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// input first row
 			input_r0 = sram_dut_read_data;
@@ -639,6 +670,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = S5;
 		end
@@ -651,6 +685,9 @@ begin
 			// increment read address. retain write address
 			current_input_addr = p_current_input_addr + incr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// input second row
 			input_r0 = p_input_r0;
@@ -677,6 +714,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = S6;
 		end
@@ -689,6 +729,9 @@ begin
 			// retain read and write address
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// input third row
 			input_r0 = p_input_r0;
@@ -715,6 +758,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = S7;
 		end
@@ -729,6 +775,9 @@ begin
 			// retain read and write address
 			current_input_addr = p_current_input_addr;
 			output_write_addr = p_output_write_addr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// retain three input registers
 			input_r0 = p_input_r0;
@@ -755,6 +804,9 @@ begin
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
 			
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = S8;
 		end
@@ -767,6 +819,11 @@ begin
 			// retain write address
 			output_write_addr = p_output_write_addr;
 			
+			// set pipelined write address
+			set_s2_waddr = (p_cidx_counter == weight_dims) ? p_output_write_addr : s2_waddr;
+			// set_s2_waddr = (cidx_counter == weight_dims - incr) ? p_output_write_addr : s2_waddr;
+// assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
+
 			// retain three input registers
 			input_r0 = p_input_r0;
 			input_r1 = p_input_r1;
@@ -802,6 +859,9 @@ begin
 			set_set_s2_done = (cidx_counter == weight_dims - incr) ? high : set_s2_done;
 // assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
 
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
 		end
@@ -809,6 +869,9 @@ begin
 		S9: begin
 			// increment column counter
 			cidx_counter = p_cidx_counter + incr;
+			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
 			
 			// retain read address
 			current_input_addr = p_current_input_addr;
@@ -835,6 +898,9 @@ begin
 			set_set_s2_done = low;
 // assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
 
+			// retain dut busy
+			set_dut_busy = dut_busy
+			
 			if (~last_row_flag) begin
 				// increase row counter
 				ridx_counter = p_ridx_counter + incr;
@@ -876,6 +942,9 @@ begin
 			ridx_counter = p_ridx_counter;
 			cidx_counter = p_cidx_counter;
 			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
+			
 			// retain three input registers
 			input_r0 = p_input_r0;
 			input_r1 = p_input_r1;
@@ -900,6 +969,9 @@ begin
 			
 			// retain done flag to be pipelined in full adders
 			set_set_s2_done = set_s2_done;
+			
+			// retain dut busy
+			set_dut_busy = dut_busy
 			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
@@ -928,6 +1000,9 @@ begin
 			current_input_addr = addr_init;
 			output_write_addr = addr_init;
 			
+			// retain pipelined write address
+			set_s2_waddr = s2_waddr;
+			
 			// reset three input registers
 			input_r0 = data_init;
 			input_r1 = data_init;
@@ -952,6 +1027,9 @@ begin
 			
 			// reset done flag to be pipelined in full adders
 			set_set_s2_done = low;
+			
+			// retain dut busy
+			set_dut_busy = dut_busy
 			
 			// next state
 			next_state = S0;
@@ -989,7 +1067,7 @@ end
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
 // when to set dut to busy
-assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
+// assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
 
 // reading weight information
 assign weight_dims = (current_state == S2) ? wmem_dut_read_data - incr : p_weight_dims;
@@ -1032,10 +1110,15 @@ assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((curren
 assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_same_state_flag;
 
 // done flag to be pipelined
+// OLD
 // assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
-assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+// NEW
+// assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
+
+// OLD
 // assign set_s2_waddr = ((current_state == S8) & ~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
-assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
+// NEW
+// assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
 
