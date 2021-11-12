@@ -138,13 +138,11 @@ reg [15:0] p_output_row_temp;
 
 // stage 2 index and done flag
 reg s2_done;
-// wire set_s2_done;
 reg set_s2_done;
 reg set_set_s2_done; 
 
 reg [3:0] s2_idx;
 reg [11:0] s2_waddr;
-// wire [11:0] set_s2_waddr;
 reg [11:0] set_s2_waddr;
 
 // stage 3 index and done flag
@@ -242,10 +240,8 @@ reg p_w22, p_w21, p_w20;
 // weights (kernel limited to 3x3, so hardcoding)
 
 // input data
-// wire d02, d12, d22;
 reg d02, d12, d22;
 reg p_d02, p_d12, p_d22;
-// wire set_data_flag;
 // input data
 
 // flag to tell each convolution module to pass through data
@@ -253,12 +249,6 @@ reg p_d02, p_d12, p_d22;
 reg conv_go;
 reg p_conv_go;
 // flag to tell each convolution module to pass through data
-
-// pipelined down to the point where take outputs into account
-//wire loaded_for_sweep;
-// reg loaded_for_sweep;
-// reg p_loaded_for_sweep;
-// pipelined down to the point where take outputs into account
 
 // same state indicator
 wire same_state_flag;
@@ -307,7 +297,6 @@ always@(posedge clk or negedge reset_b)
 		p_output_write_addr <= addr_init;
 		
 		// reset storage regs/flags stage 1 -> 2
-		// p_set_s2_done <= low;
 		set_s2_done <= low; 
 		s2_done <= low; 
 		s2_idx <= indx_init; 
@@ -351,8 +340,6 @@ always@(posedge clk or negedge reset_b)
 		
 		// reset convolution indicator
 		p_conv_go <= low;
-		// reset rippled down indicator
-		// p_loaded_for_sweep <= low;
 		// reset same state indicator
 		p_same_state_flag <= low;
 		// reset when to load weights
@@ -394,7 +381,6 @@ always@(posedge clk or negedge reset_b)
 		p_output_write_addr <= output_write_addr;
 		
 		// set storage regs/flags stage 1 -> 2
-		// p_set_s2_done <= set_s2_done;
 		set_s2_done <= set_set_s2_done; 
 		s2_done <= set_s2_done; 
 		s2_idx <= c00_out; 
@@ -438,8 +424,6 @@ always@(posedge clk or negedge reset_b)
 		
 		// set convolution indicator
 		p_conv_go <= conv_go;
-		// set rippled down indicator
-		// p_loaded_for_sweep <= loaded_for_sweep;
 		// set same state indicator
 		p_same_state_flag <= same_state_flag;
 		// set when to load weights
@@ -478,9 +462,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// reset loaded for sweep
-			// loaded_for_sweep = low;
-			
 			// reset convolution indicicator
 			conv_go = low;
 			
@@ -494,8 +475,6 @@ begin
 			
 			// set set dut busy
 			set_dut_busy = dut_run ? high : low;
-// when to set dut to busy
-// assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
 
 			// next state
 			next_state = dut_run ? S1 : S0;
@@ -524,9 +503,6 @@ begin
 			// load in weights dimensions
 			dut_wmem_read_address = weights_dims_addr;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
@@ -539,7 +515,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S2;
@@ -567,9 +543,6 @@ begin
 			
 			// load in weights data
 			dut_wmem_read_address = weights_data_addr;
-			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
 			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
@@ -612,9 +585,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
@@ -627,7 +597,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S4;
@@ -656,9 +626,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
@@ -671,7 +638,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S5;
@@ -700,9 +667,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
@@ -715,7 +679,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S6;
@@ -744,9 +708,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
@@ -759,7 +720,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S7;
@@ -789,9 +750,6 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
-			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
 
 			// set convolution indicicator
 			conv_go = high;
@@ -805,7 +763,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S8;
@@ -821,8 +779,6 @@ begin
 			
 			// set pipelined write address
 			set_s2_waddr = (p_cidx_counter == weight_dims) ? p_output_write_addr : s2_waddr;
-			// set_s2_waddr = (cidx_counter == weight_dims - incr) ? p_output_write_addr : s2_waddr;
-// assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 
 			// retain three input registers
 			input_r0 = p_input_r0;
@@ -844,8 +800,6 @@ begin
 			
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
-			
-//assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
 
 			// retain convolution indicicator
 			conv_go = p_conv_go;
@@ -857,10 +811,9 @@ begin
 			
 			// set done flag to be pipelined in full adders
 			set_set_s2_done = (cidx_counter == weight_dims - incr) ? high : set_s2_done;
-// assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
 
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = col_prep_oob ? S9 : S8;
@@ -879,27 +832,19 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// set convolution indicicator
 			conv_go = last_row_flag ? low : high;
-// assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
 
 			// set data inputs
 			d02 = p_input_r0[cidx_counter[3:0]];
 			d12 = p_input_r1[cidx_counter[3:0]];
 			d22 = p_input_r2[cidx_counter[3:0]];
-// assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
-// assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
-// assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
 
 			// reset done flag to be pipelined in full adders
 			set_set_s2_done = low;
-// assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
 
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			if (~last_row_flag) begin
 				// increase row counter
@@ -956,9 +901,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// retain loaded for sweep
-			// loaded_for_sweep = p_loaded_for_sweep;
-			
 			// retain convolution indicicator
 			conv_go = p_conv_go;
 			
@@ -971,7 +913,7 @@ begin
 			set_set_s2_done = set_s2_done;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// check s3_done, keep looping if high
 			if (s3_done) begin
@@ -1014,9 +956,6 @@ begin
 			// reset weight read address interface
 			dut_wmem_read_address = addr_init;
 			
-			// reset loaded for sweep
-			// loaded_for_sweep = low;
-			
 			// reset convolution indicicator
 			conv_go = low;
 			
@@ -1029,7 +968,7 @@ begin
 			set_set_s2_done = low;
 			
 			// retain dut busy
-			set_dut_busy = dut_busy
+			set_dut_busy = dut_busy;
 			
 			// next state
 			next_state = S0;
@@ -1066,9 +1005,6 @@ end
 
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
-// when to set dut to busy
-// assign set_dut_busy = (current_state == S0) ? (dut_run ? high : low) : ((current_state == S2 & end_condition_met) ? low : dut_busy);
-
 // reading weight information
 assign weight_dims = (current_state == S2) ? wmem_dut_read_data - incr : p_weight_dims;
 assign weight_data = (current_state == S3) ? wmem_dut_read_data : p_weight_data;
@@ -1091,34 +1027,8 @@ assign w22 = (current_state == S4) ? p_weight_data[8] : p_w22;
 assign w21 = (current_state == S4) ? p_weight_data[7] : p_w21;
 assign w20 = (current_state == S4) ? p_weight_data[6] : p_w20;
 
-// data wires
-// assign set_data_flag = (current_state == S7 | current_state == S8 | current_state == S9);
-// assign d02 = set_data_flag ? input_r0[cidx_counter[3:0]] : p_d02;
-// assign d12 = set_data_flag ? input_r1[cidx_counter[3:0]] : p_d12;
-// assign d22 = set_data_flag ? input_r2[cidx_counter[3:0]] : p_d22;
-
-/*// values are loaded in and ready to output
-assign loaded_for_sweep = (current_state == S8) ? ((p_loaded_for_sweep) ? low : ((cidx_counter == weight_dims) ? high : p_loaded_for_sweep)) : p_loaded_for_sweep;
-*/
-
-/*// convolution indicicator
-assign conv_go = (current_state == S9) ? (last_row_flag ? low : high) : ((current_state == S7) ? high : p_conv_go);
-*/
-
 // return same state indicator 
-// assign same_state_flag = (current_state == S0) ? p_same_state_flag : ((current_state == next_state) ? ~p_same_state_flag : p_same_state_flag);
 assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_same_state_flag;
-
-// done flag to be pipelined
-// OLD
-// assign set_s2_done = (current_state == S8) ? ((~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
-// NEW
-// assign set_s2_done = (current_state == S8) ? ((cidx_counter == weight_dims) ? high : s2_done) : ((current_state == S9) ? low : s2_done);
-
-// OLD
-// assign set_s2_waddr = ((current_state == S8) & ~p_loaded_for_sweep & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
-// NEW
-// assign set_s2_waddr = ((current_state == S8) & (cidx_counter == weight_dims - incr)) ? output_write_addr : s2_waddr;
 // ========== FSM WIRES ==========
 // ========== FSM WIRES ==========
 
@@ -1126,11 +1036,14 @@ assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_
 // ========== FLAGS/INDICATORS ==========
 // ========== FLAGS/INDICATORS ==========
 // row and column out-of-bounds flags
-assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
-assign col_prep_oob = (cidx_counter == input_num_cols);
+// assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
+assign last_row_flag = ((ridx_counter + incr) == p_input_num_rows);
+// assign col_prep_oob = (cidx_counter == input_num_cols);
+assign col_prep_oob = (p_cidx_counter == p_input_num_cols);
 
 // max index to be stored for convolution
-assign max_col_idx = input_num_cols - weight_dims;
+// assign max_col_idx = input_num_cols - weight_dims;
+assign max_col_idx = p_input_num_cols - p_weight_dims;
 
 // first condition indicates stored data + not done, meaning transitioning to calculating new row
 assign finished_storing = (~prev_s3_done & dut_sram_write_enable);
@@ -1140,14 +1053,17 @@ assign negedge_done = (~s3_done & prev_s3_done);
 assign set_dut_sram_write_enable = finished_storing ? low : (negedge_done ? high : dut_sram_write_enable);
 assign set_dut_sram_write_address = negedge_done ? s3_waddr : dut_sram_write_address;
 assign set_dut_sram_write_data = negedge_done ? p_output_row_temp : dut_sram_write_data;
+// ^^ SYNOPSYS SHOULD BE GOOD ^^
 
 // negative flag of currently rippled value
 // if value 5 or more, then negative. otherwise, positive
 // (out of 9 values, hence why '5' indicates majority)
 assign negative_flag = (ones & twos1 & twos2) | ((ones | twos1 | twos2) & fours);
+// ^^ SYNOPSYS SHOULD BE GOOD ^^
 
 // end condition met - stop reading
 assign end_condition_met = (sram_dut_read_data == end_condition);
+// ^^ SYNOPSYS SHOULD BE GOOD ^^
 // ========== FLAGS/INDICATORS ==========
 // ========== FLAGS/INDICATORS ==========
 
@@ -1161,23 +1077,14 @@ assign end_condition_met = (sram_dut_read_data == end_condition);
 // [dyx] -> m22, m21, m20 ->
 //  --> --> --> --> --> -->
 // first row
-// conv_module m02 (clk, reset_b, conv_go, load_weights, w02, d02, top_pipeline_idx, output_write_addr, cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
-// conv_module m01 (clk, reset_b, conv_go, load_weights, w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
-// conv_module m00 (clk, reset_b, conv_go, load_weights, w00, d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
 conv_module m02 (clk, reset_b, p_conv_go, p_load_weights, p_w02, p_d02, top_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
 conv_module m01 (clk, reset_b, p_conv_go, p_load_weights, p_w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
 conv_module m00 (clk, reset_b, p_conv_go, p_load_weights, p_w00, d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
 // second row
-// conv_module m12 (clk, reset_b, conv_go, load_weights, w12, d12, rest_pipeline_idx, output_write_addr, cidx_counter[3:0], d12_out, waddr12_out, c12_out, n12);
-// conv_module m11 (clk, reset_b, conv_go, load_weights, w11, d12_out, rest_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
-// conv_module m10 (clk, reset_b, conv_go, load_weights, w10, d11_out, rest_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
 conv_module m12 (clk, reset_b, p_conv_go, p_load_weights, p_w12, p_d12, rest_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d12_out, waddr12_out, c12_out, n12);
 conv_module m11 (clk, reset_b, p_conv_go, p_load_weights, p_w11, d12_out, rest_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
 conv_module m10 (clk, reset_b, p_conv_go, p_load_weights, p_w10, d11_out, rest_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
 // third row
-// conv_module m22 (clk, reset_b, conv_go, load_weights, w22, d22, rest_pipeline_idx, output_write_addr, cidx_counter[3:0], d22_out, waddr22_out, c22_out, n22);
-// conv_module m21 (clk, reset_b, conv_go, load_weights, w21, d22_out, rest_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
-// conv_module m20 (clk, reset_b, conv_go, load_weights, w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
 conv_module m22 (clk, reset_b, p_conv_go, p_load_weights, p_w22, p_d22, rest_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d22_out, waddr22_out, c22_out, n22);
 conv_module m21 (clk, reset_b, p_conv_go, p_load_weights, p_w21, d22_out, rest_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
 conv_module m20 (clk, reset_b, p_conv_go, p_load_weights, p_w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
