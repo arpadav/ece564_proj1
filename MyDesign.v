@@ -1036,14 +1036,14 @@ assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_
 // ========== FLAGS/INDICATORS ==========
 // ========== FLAGS/INDICATORS ==========
 // row and column out-of-bounds flags
-// assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
-assign last_row_flag = ((ridx_counter + incr) == p_input_num_rows);
-// assign col_prep_oob = (cidx_counter == input_num_cols);
-assign col_prep_oob = (p_cidx_counter == p_input_num_cols);
+assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
+// assign last_row_flag = ((ridx_counter + incr) == p_input_num_rows);
+assign col_prep_oob = (cidx_counter == input_num_cols);
+// assign col_prep_oob = (p_cidx_counter == p_input_num_cols);
 
 // max index to be stored for convolution
-// assign max_col_idx = input_num_cols - weight_dims;
-assign max_col_idx = p_input_num_cols - p_weight_dims;
+assign max_col_idx = input_num_cols - weight_dims;
+// assign max_col_idx = p_input_num_cols - p_weight_dims;
 
 // first condition indicates stored data + not done, meaning transitioning to calculating new row
 assign finished_storing = (~prev_s3_done & dut_sram_write_enable);
