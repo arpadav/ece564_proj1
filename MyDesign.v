@@ -341,6 +341,9 @@ datapath dp (	dut_busy,
 				//
 				dut_busy_toggle,
 				
+				set_initialization_flag,
+				reset_initialization_flag,
+				
 				incr_col_enable,
 				incr_row_enable,
 				rst_col_counter,

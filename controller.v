@@ -92,6 +92,9 @@ output reg dut_sram_write_enable;
 // wire set_dut_sram_write_enable; */
 
 input end_condition_met;
+
+input initialization_flag;
+
 input last_col_next;
 input last_row_flag;
 
