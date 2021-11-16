@@ -116,6 +116,34 @@ wire [2:0] s1_twos;
 wire [2:0] s2_ones;
 wire [2:0] s2_twos;
 
+
+wire initialization_flag;
+wire last_col_next;
+wire last_row_flag;
+wire dut_busy_toggle;
+wire set_initialization_flag;
+wire reset_initialization_flag;
+wire incr_col_enable;
+wire incr_row_enable;
+wire rst_col_counter;
+wire rst_row_counter;
+wire incr_raddr_enable;
+wire rst_dut_wmem_read_address;
+wire str_weights_dims;
+wire str_weights_data;
+wire str_input_nrows;
+wire str_input_ncols;
+wire pln_input_row_enable;
+wire str_temp_to_write;
+wire update_d_in;
+wire load_weights_to_modules;
+wire toggle_conv_go_flag;
+wire incr_output_addr;
+wire rst_output_row_temp;
+wire negative_flag;
+wire conv_go_flag;
+
+
 // store states
 // reg [3:0] current_state, next_state;
 

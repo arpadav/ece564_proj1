@@ -352,15 +352,13 @@ always@(posedge clk or negedge reset_b)
 // ========== COUNTERS ==========
 // Column Counter
 always@(posedge clk or negedge reset_b)
-	if (!reset_b || rst_col_counter) begin 
+	if (!reset_b) begin 
 		cidx_counter <= cntr_init;
 		last_col_next <= low;
-	end /* else begin 
-		if (rst_col_counter) begin
-			cidx_counter <= cntr_init;
-			last_col_next <= low;
-		end  */
-	else if (incr_col_enable) begin
+	end else if (rst_col_counter) begin
+		cidx_counter <= cntr_init;
+		last_col_next <= low;
+	end	else if (incr_col_enable) begin
 		cidx_counter <= cidx_counter + incr;
 		last_col_next <= input_num_cols == cidx_counter + incr;
 	end
@@ -368,7 +366,10 @@ always@(posedge clk or negedge reset_b)
 
 // Row Counter
 always@(posedge clk or negedge reset_b)
-	if (!reset_b || rst_row_counter) begin 
+	if (!reset_b) begin 
+		ridx_counter <= cntr_init;
+		last_row_flag <= low;
+	end else if (rst_row_counter) begin
 		ridx_counter <= cntr_init;
 		last_row_flag <= low;
 	end else if (incr_row_enable) begin 
