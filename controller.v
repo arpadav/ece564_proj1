@@ -110,6 +110,8 @@ output reg str_input_nrows;
 output reg str_input_ncols;
 output reg pln_input_row_enable;
 
+output reg str_temp_to_write;
+
 output reg update_d_in;
 
 output reg load_weights_to_modules;

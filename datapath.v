@@ -92,7 +92,7 @@ input [15:0] wmem_dut_read_data;
 // dut -> sram (output)
 output reg [11:0] dut_sram_write_address;
 output reg [15:0] dut_sram_write_data;
-input dut_sram_write_enable;
+output wire dut_sram_write_enable;
 // wire [11:0] set_dut_sram_write_address;
 // wire [15:0] set_dut_sram_write_data;
 
@@ -117,6 +117,8 @@ input str_input_nrows;
 input str_input_ncols;
 input pln_input_row_enable;
 // input str_input_data;
+
+input str_temp_to_write;
 
 input update_d_in;
 
@@ -209,6 +211,9 @@ reg [3:0] writ_idx;
 
 // temporary output register
 reg [15:0] output_row_temp;
+
+// for storing previous value for write enable
+reg p_str_temp_to_write;
 // ========== REGISTERS ==========
 // ========== REGISTERS ==========
 

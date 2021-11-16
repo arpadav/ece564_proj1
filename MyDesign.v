@@ -283,7 +283,7 @@ wire end_condition_met;
 controller ctrl (	dut_run,
 					reset_b,
 					clk,
-					dut_sram_write_enable,
+					// dut_sram_write_enable,
 					//
 					end_condition_met,
 					last_col_next,
