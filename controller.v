@@ -203,7 +203,7 @@ begin
 	case(current_state)
 		S0: next_state = dut_run ? S1 : S0;
 		S1: next_state = S2;
-		S2: next_state = S3; //end_condition_met ? S0 : S3;
+		S2: next_state = end_condition_met ? S0 : S3;
 		S3: next_state = S4;
 		S4: next_state = S5;
 		S5: next_state = S6;
@@ -211,8 +211,9 @@ begin
 		S7: next_state = S8;
 		S8: next_state = last_col_next ? S9 : S8;
 		S9: next_state = SA;
-		SA: next_state = last_row_flag ? SB : S7;
-		SB: next_state = S1; //s3_done ? SA : S1;
+		SA: next_state = SB;
+		SB: next_state = last_row_flag ? SC : S7;
+		SC: next_state = S1; //s3_done ? SA : S1;
 		default: next_state = S0;
 	endcase
 	
@@ -360,11 +361,16 @@ begin
 		SA: begin
 			// read in next row and pipeline the rest
 			pln_input_row_enable = high;
+			// // write row here
+			// str_temp_to_write = high;
+		end
+		
+		SB: begin
 			// write row here
 			str_temp_to_write = high;
 		end
 		
-		SB: begin
+		SC: begin
 			// 
 			rst_output_row_temp = high;
 			// 
