@@ -51,25 +51,28 @@ begin
 				// pass index forward
 				write_addr_out <= write_addr_in;
 				idx_out <= idx_in;
-			end else begin
+			end
+			/* else begin
 				// otherwise retain index
 				write_addr_out <= write_addr_out;
 				idx_out <= idx_out;
-			end
-		end else begin
+			end */
+		end
+		/* else begin
 			// otherwise retain values
 			data_out <= data_out;
 			write_addr_out <= write_addr_out;
 			idx_out <= idx_out;
-		end
+		end */
 		
 		if (load_weight) begin
 			// load weight
 			weight <= weight_in;
-		end else begin
+		end
+		/* else begin
 			// retain weight
 			weight <= weight;
-		end
+		end */
 	end
 end
 

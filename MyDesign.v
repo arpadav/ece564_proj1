@@ -16,33 +16,33 @@ module MyDesign (	dut_run,
 // if 1, do convolution
 input dut_run;
 // set to 1 if calculating, 0 once done and stored
-output reg dut_busy;
+output wire dut_busy;
 // wire set_dut_busy;
-reg set_dut_busy;
+// reg set_dut_busy;
 
 // reset and clock
 input reset_b;
 input clk;
 
 // dut -> sram (input)
-output reg [11:0] dut_sram_read_address;
-reg [11:0] p_dut_sram_read_address;
+output wire [11:0] dut_sram_read_address;
+// reg [11:0] p_dut_sram_read_address;
 // sram -> dut (input)
 input [15:0] sram_dut_read_data;
 
 // dut -> sram (weights)
-output reg [11:0] dut_wmem_read_address;
-reg [11:0] p_dut_wmem_read_address;
+output wire [11:0] dut_wmem_read_address;
+// reg [11:0] p_dut_wmem_read_address;
 // sram -> dut (weights)
 input [15:0] wmem_dut_read_data;
 
 // dut -> sram (output)
-output reg [11:0] dut_sram_write_address;
-output reg [15:0] dut_sram_write_data;
-output reg dut_sram_write_enable;
-wire [11:0] set_dut_sram_write_address;
-wire [15:0] set_dut_sram_write_data;
-wire set_dut_sram_write_enable;
+output wire [11:0] dut_sram_write_address;
+output wire [15:0] dut_sram_write_data;
+output wire dut_sram_write_enable;
+// wire [11:0] set_dut_sram_write_address;
+// wire [15:0] set_dut_sram_write_data;
+// wire set_dut_sram_write_enable;
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
 
@@ -55,114 +55,134 @@ parameter low = 1'b0;
 
 // indicates which modules pass the indicies
 parameter top_pipeline_idx = 1'b1;
-parameter rest_pipeline_idx = 1'b0;
+parameter blw_pipeline_idx = 1'b0;
 
 // since weights is limited to 3x3, ONLY second address needed for weights
-parameter weights_dims_addr = 12'h0;
-parameter weights_data_addr = 12'h1;
+// parameter weights_dims_addr = 12'h0;
+// parameter weights_data_addr = 12'h1;
 
 // increment everything by this much
-parameter incr = 1'b1;
+// parameter incr = 1'b1;
 
 // initial index, address, counter
-parameter indx_init = 4'h0;
-parameter addr_init = 12'h0;
-parameter data_init = 16'h0;
+// parameter indx_init = 4'h0;
+// parameter addr_init = 12'h0;
+// parameter data_init = 16'h0;
 
 // end condition
 parameter end_condition = 16'h00FF;
 
 // states
-parameter [3:0]
-	S0 = 4'b0000,
-	S1 = 4'b0001,
-	S2 = 4'b0010,
-	S3 = 4'b0011,
-	S4 = 4'b0100,
-	S5 = 4'b0101,
-	S6 = 4'b0110,
-	S7 = 4'b0111,
-	S8 = 4'b1000,
-	S9 = 4'b1001,
-	SA = 4'b1010,
-	SB = 4'b1011,
-	SC = 4'b1100,
-	SD = 4'b1101,
-	SE = 4'b1110,
-	SF = 4'b1111;
+// parameter [3:0]
+	// S0 = 4'b0000,
+	// S1 = 4'b0001,
+	// S2 = 4'b0010,
+	// S3 = 4'b0011,
+	// S4 = 4'b0100,
+	// S5 = 4'b0101,
+	// S6 = 4'b0110,
+	// S7 = 4'b0111,
+	// S8 = 4'b1000,
+	// S9 = 4'b1001,
+	// SA = 4'b1010,
+	// SB = 4'b1011,
+	// SC = 4'b1100,
+	// SD = 4'b1101,
+	// SE = 4'b1110,
+	// SF = 4'b1111;
 // ========== PARAMETERS ==========
 // ========== PARAMETERS ==========
 
 
 // ========== REGISTERS ==========
 // ========== REGISTERS ==========
+// wire [11:0] nxt_dut_wmem_read_address;
+wire [15:0] weights_data;
+
+// hard coded to 3 because that is kernel dimension limit
+wire [2:0] d_in;
+
+// column index in (for storage)
+wire [3:0] coli_in;
+
+// output address pipelined in convolution modules
+wire [11:0] output_addr;
+
+// for full adder
+wire [2:0] s1_ones;
+wire [2:0] s1_twos;
+
+// for full adder
+wire [2:0] s2_ones;
+wire [2:0] s2_twos;
+
 // store states
-reg [3:0] current_state, next_state;
+// reg [3:0] current_state, next_state;
 
 // store weight dimensions, data
-wire [15:0] weight_dims;
-wire [15:0] weight_data;
-reg [15:0] p_weight_dims;
-reg [15:0] p_weight_data;
+// wire [15:0] weight_dims;
+// wire [15:0] weight_data;
+// reg [15:0] p_weight_dims;
+// reg [15:0] p_weight_data;
 
 // store current read and write address
-reg [11:0] current_input_addr;
-reg [11:0] output_write_addr;
-reg [11:0] p_current_input_addr;
-reg [11:0] p_output_write_addr;
+// reg [11:0] current_input_addr;
+// reg [11:0] output_write_addr;
+// reg [11:0] p_current_input_addr;
+// reg [11:0] p_output_write_addr;
 
 // store number of input rows, columns
-wire [15:0] input_num_rows;
-wire [15:0] input_num_cols;
-reg [15:0] p_input_num_rows;
-reg [15:0] p_input_num_cols;
+// wire [15:0] input_num_rows;
+// wire [15:0] input_num_cols;
+// reg [15:0] p_input_num_rows;
+// reg [15:0] p_input_num_cols;
 
 // store first, second, third row of input
 // (hardcoded because kernel limited to 3x3)
-reg [15:0] input_r0;
-reg [15:0] input_r1;
-reg [15:0] input_r2;
-reg [15:0] p_input_r0;
-reg [15:0] p_input_r1;
-reg [15:0] p_input_r2;
+// reg [15:0] input_r0;
+// reg [15:0] input_r1;
+// reg [15:0] input_r2;
+// reg [15:0] p_input_r0;
+// reg [15:0] p_input_r1;
+// reg [15:0] p_input_r2;
 
 // row and column counters
-reg [15:0] ridx_counter;
-reg [15:0] cidx_counter;
-reg [15:0] p_ridx_counter;
-reg [15:0] p_cidx_counter;
+// reg [15:0] ridx_counter;
+// reg [15:0] cidx_counter;
+// reg [15:0] p_ridx_counter;
+// reg [15:0] p_cidx_counter;
 
 // output to store
-reg [15:0] output_row_temp;
-reg [15:0] p_output_row_temp;
+// reg [15:0] output_row_temp;
+// reg [15:0] p_output_row_temp;
 
 // stage 2 index and done flag
-reg s2_done;
-reg set_s2_done;
-reg set_set_s2_done; 
+// reg s2_done;
+// reg set_s2_done;
+// reg set_set_s2_done; 
 
-reg [3:0] s2_idx;
-reg [11:0] s2_waddr;
-reg [11:0] set_s2_waddr;
+// reg [3:0] s2_idx;
+// reg [11:0] s2_waddr;
+// reg [11:0] set_s2_waddr;
 
 // stage 3 index and done flag
-reg s3_done;
-reg prev_s3_done;
-reg [3:0] s3_idx;
-reg [11:0] s3_waddr;
+// reg s3_done;
+// reg prev_s3_done;
+// reg [3:0] s3_idx;
+// reg [11:0] s3_waddr;
 
 // stage 2 full adder inputs
-reg FA1_s2_in1;
-reg FA1_s2_in2;
-reg FA1_s2_in3;
-reg FA2_s2_in1;
-reg FA2_s2_in2;
-reg FA2_s2_in3;
+// reg FA1_s2_in1;
+// reg FA1_s2_in2;
+// reg FA1_s2_in3;
+// reg FA2_s2_in1;
+// reg FA2_s2_in2;
+// reg FA2_s2_in3;
 
 // stage 3, full adder logic for pos/neg checking
-reg ones;
-reg twos1, twos2;
-reg fours;
+// reg ones;
+// reg twos1, twos2;
+// reg fours;
 // ========== REGISTERS ==========
 // ========== REGISTERS ==========
 
@@ -204,25 +224,25 @@ wire FA2_s2_twos;
 wire FA2_s2_fours;
 
 // flag to load in weights to convolution modules
-wire load_weights;
-reg p_load_weights;
+// wire load_weights;
+// reg p_load_weights;
 
 // row and column out-of-bounds flags
-wire last_row_flag;
-wire col_prep_oob;
+// wire last_row_flag;
+// wire last_col_next;
 
 // end condition met
 wire end_condition_met;
 
 // used in storing for output
-wire [15:0] max_col_idx;
+// wire [15:0] max_col_idx;
 
 // wire used to store output data
-wire negative_flag;
+// wire negative_flag;
 
 // storage indicator wires
-wire finished_storing;
-wire negedge_done;
+// wire finished_storing;
+// wire negedge_done;
 
 // ========== WIRES ==========
 // ========== WIRES ==========
@@ -231,845 +251,131 @@ wire negedge_done;
 // ========== REG/WIRE PAIRS ==========
 // ========== REG/WIRE PAIRS ==========
 // weights (kernel limited to 3x3, so hardcoding)
-wire w02, w01, w00;
-wire w12, w11, w10;
-wire w22, w21, w20;
-reg p_w02, p_w01, p_w00;
-reg p_w12, p_w11, p_w10;
-reg p_w22, p_w21, p_w20;
+// wire w02, w01, w00;
+// wire w12, w11, w10;
+// wire w22, w21, w20;
+// reg p_w02, p_w01, p_w00;
+// reg p_w12, p_w11, p_w10;
+// reg p_w22, p_w21, p_w20;
 // weights (kernel limited to 3x3, so hardcoding)
 
 // input data
-reg d02, d12, d22;
-reg p_d02, p_d12, p_d22;
+// reg d02, d12, d22;
+// reg p_d02, p_d12, p_d22;
 // input data
 
 // flag to tell each convolution module to pass through data
 // wire conv_go;
-reg conv_go;
-reg p_conv_go;
+// reg conv_go;
+// reg p_conv_go;
 // flag to tell each convolution module to pass through data
 
 // same state indicator
-wire same_state_flag;
-reg p_same_state_flag;
+// wire same_state_flag;
+// reg p_same_state_flag;
 // same state indicator 
 // ========== REG/WIRE PAIRS ==========
 // ========== REG/WIRE PAIRS ==========
 
-
-// ========== FSM FLIP-FLOPS ==========
-// ========== FSM FLIP-FLOPS ==========
-always@(posedge clk or negedge reset_b)
-	if (!reset_b) begin
-		// starting state
-		current_state <= S0;
-		
-		// dut not busy
-		dut_busy <= low;
-		
-		// reset write enable / stored flag 
-		dut_sram_write_enable <= low;
-		// reset outputs
-		dut_sram_write_address <= addr_init;
-		dut_sram_write_data <= data_init;
-		p_dut_sram_read_address <= addr_init;
-		p_dut_wmem_read_address <= addr_init;
-		// reset temporary output register
-		p_output_row_temp <= data_init;
-		
-		// reset weight information
-		p_weight_dims <= data_init;
-		p_weight_data <= data_init;
-		// reset input information
-		p_input_num_rows <= data_init;
-		p_input_num_cols <= data_init;
-		p_input_r0 <= data_init;
-		p_input_r1 <= data_init;
-		p_input_r2 <= data_init;
-		
-		// reset counters
-		p_ridx_counter <= data_init;
-		p_cidx_counter <= data_init;
-		
-		// reset read and write address
-		p_current_input_addr <= addr_init;
-		p_output_write_addr <= addr_init;
-		
-		// reset storage regs/flags stage 1 -> 2
-		set_s2_done <= low; 
-		s2_done <= low; 
-		s2_idx <= indx_init; 
-		s2_waddr <= addr_init; 
-		
-		// reset storage regs/flags stage 2 -> 3
-		s3_done <= low;
-		prev_s3_done <= low;
-		s3_idx <= indx_init;
-		s3_waddr <= addr_init;
-		
-		// reset FA stage 1 -> 2
-		FA1_s2_in1 <= low;
-		FA1_s2_in2 <= low;
-		FA1_s2_in3 <= low;
-		FA2_s2_in1 <= low;
-		FA2_s2_in2 <= low;
-		FA2_s2_in3 <= low;
-				
-		// reset FA stage 2 -> 3
-		ones <= low;
-		twos1 <= low;
-		twos2 <= low;
-		fours <= low;
-		
-		// reset weight registers
-		p_w02 <= low;
-		p_w01 <= low;
-		p_w00 <= low;
-		p_w12 <= low;
-		p_w11 <= low;
-		p_w10 <= low;
-		p_w22 <= low;
-		p_w21 <= low;
-		p_w20 <= low;
-		
-		// reset data registers
-		p_d02 <= low;
-		p_d12 <= low;
-		p_d22 <= low;
-		
-		// reset convolution indicator
-		p_conv_go <= low;
-		// reset same state indicator
-		p_same_state_flag <= low;
-		// reset when to load weights
-		p_load_weights <= low;
-		
-	end else begin
-		// next state
-		current_state <= next_state;
-		
-		// dut busy reg
-		dut_busy <= set_dut_busy;
-		
-		// set write enable / stored flag 
-		dut_sram_write_enable <= set_dut_sram_write_enable;
-		// set outputs
-		dut_sram_write_address <= set_dut_sram_write_address;
-		dut_sram_write_data <= set_dut_sram_write_data;
-		p_dut_sram_read_address <= dut_sram_read_address;
-		p_dut_wmem_read_address <= dut_wmem_read_address;
-		// set temporary output register
-		p_output_row_temp <= output_row_temp;
-		
-		// set weight information
-		p_weight_dims <= weight_dims;
-		p_weight_data <= weight_data;
-		// set input information
-		p_input_num_rows <= input_num_rows;
-		p_input_num_cols <= input_num_cols;
-		p_input_r0 <= input_r0;
-		p_input_r1 <= input_r1;
-		p_input_r2 <= input_r2;
-		
-		// set counters
-		p_ridx_counter <= ridx_counter;
-		p_cidx_counter <= cidx_counter;
-		
-		// set read and write address
-		p_current_input_addr <= current_input_addr;
-		p_output_write_addr <= output_write_addr;
-		
-		// set storage regs/flags stage 1 -> 2
-		set_s2_done <= set_set_s2_done; 
-		s2_done <= set_s2_done; 
-		s2_idx <= c00_out; 
-		s2_waddr <= set_s2_waddr; 
-		
-		// set storage regs/flags stage 2 -> 3
-		s3_done <= s2_done;
-		prev_s3_done <= s3_done;
-		s3_idx <= s2_idx;
-		s3_waddr <= s2_waddr;
-		
-		// set FA stage 1 -> 2
-		FA1_s2_in1 <= FA1_s1_ones;
-		FA1_s2_in2 <= FA2_s1_ones;
-		FA1_s2_in3 <= FA3_s1_ones;
-		FA2_s2_in1 <= FA1_s1_twos;
-		FA2_s2_in2 <= FA2_s1_twos;
-		FA2_s2_in3 <= FA3_s1_twos;
-				
-		// set FA stage 2 -> 3
-		ones <= FA1_s2_ones;
-		twos1 <= FA1_s2_twos;
-		twos2 <= FA2_s2_twos;
-		fours <= FA2_s2_fours;
-		
-		// set weight registers
-		p_w02 <= w02;
-		p_w01 <= w01;
-		p_w00 <= w00;
-		p_w12 <= w12;
-		p_w11 <= w11;
-		p_w10 <= w10;
-		p_w22 <= w22;
-		p_w21 <= w21;
-		p_w20 <= w20;
-		
-		// set data registers
-		p_d02 <= d02;
-		p_d12 <= d12;
-		p_d22 <= d22;
-		
-		// set convolution indicator
-		p_conv_go <= conv_go;
-		// set same state indicator
-		p_same_state_flag <= same_state_flag;
-		// set when to load weights
-		p_load_weights <= load_weights;
-	end
-// ========== FSM FLIP-FLOPS ==========
-// ========== FSM FLIP-FLOPS ==========
-
-
-// ========== FSM STATES ==========
-// ========== FSM STATES ==========
-always@(current_state or p_same_state_flag) // current_state or dut_run or 
-begin
-	case(current_state)
-		// begin state, look for when to run
-		S0: begin
-			// reset counters
-			ridx_counter = data_init;
-			cidx_counter = data_init;
-			
-			// reset read and write address
-			current_input_addr = addr_init;
-			output_write_addr = addr_init;
-			
-			// reset pipelined write address
-			set_s2_waddr = addr_init;
-			
-			// reset three input registers
-			input_r0 = data_init;
-			input_r1 = data_init;
-			input_r2 = data_init;
-			
-			// reset input read address interface
-			dut_sram_read_address = addr_init;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// reset convolution indicicator
-			conv_go = low;
-			
-			// reset data inputs
-			d02 = low;
-			d12 = low;
-			d22 = low;
-			
-			// reset done flag to be pipelined in full adders
-			set_set_s2_done = low;
-			
-			// set set dut busy
-			set_dut_busy = dut_run ? high : low;
-
-			// next state
-			next_state = dut_run ? S1 : S0;
-		end
-		
-		S1: begin
-			// counters retain value
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter;
-			
-			// retain read and write address
-			current_input_addr = p_current_input_addr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// retain three input registers
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// load in input dimension 1 (rows)
-			dut_sram_read_address = current_input_addr;
-			
-			// load in weights dimensions
-			dut_wmem_read_address = weights_dims_addr;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S2;
-		end
-		
-		S2: begin
-			// counters retain value
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter;
-			
-			// increment read address. retain write address
-			current_input_addr = p_current_input_addr + incr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// retain three input registers
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// load in input dimension 2 (columns)
-			dut_sram_read_address = current_input_addr;
-			
-			// load in weights data
-			dut_wmem_read_address = weights_data_addr;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// set set dut busy
-			set_dut_busy = end_condition_met ? low : dut_busy;
-			
-			// next state, potentially done
-			next_state = end_condition_met ? S0 : S3;
-		end
-		
-		S3: begin
-			// counters retain value
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter;
-			
-			// increment read address. retain write address
-			current_input_addr = p_current_input_addr + incr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// retain three input registers
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// load in FIRST row of input
-			dut_sram_read_address = current_input_addr;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S4;
-		end
-		
-		S4: begin
-			// set row counter to weight dim - 1. column retain
-			ridx_counter = weight_dims - incr;
-			cidx_counter = p_cidx_counter;
-			
-			// increment read address. retain write address
-			current_input_addr = p_current_input_addr + incr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// input first row
-			input_r0 = sram_dut_read_data;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// load in SECOND row of input
-			dut_sram_read_address = current_input_addr;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S5;
-		end
-		
-		S5: begin
-			// counters retain value
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter;
-			
-			// increment read address. retain write address
-			current_input_addr = p_current_input_addr + incr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// input second row
-			input_r0 = p_input_r0;
-			input_r1 = sram_dut_read_data;
-			input_r2 = p_input_r2;
-			
-			// load in THIRD row of input
-			dut_sram_read_address = current_input_addr;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S6;
-		end
-		
-		S6: begin
-			// counters retain value
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter;
-			
-			// retain read and write address
-			current_input_addr = p_current_input_addr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// input third row
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = sram_dut_read_data;
-			
-			// retain input read address
-			dut_sram_read_address = p_dut_sram_read_address;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S7;
-		end
-		
-		S7: begin
-			// start loading for sweep
-			// row counter already updated
-			// reset column counter
-			ridx_counter = p_ridx_counter;
-			cidx_counter = data_init;
-			
-			// retain read and write address
-			current_input_addr = p_current_input_addr;
-			output_write_addr = p_output_write_addr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// retain three input registers
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// retain input read address
-			dut_sram_read_address = p_dut_sram_read_address;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-
-			// set convolution indicicator
-			conv_go = high;
-			
-			// set data inputs
-			d02 = p_input_r0[cidx_counter[3:0]];
-			d12 = p_input_r1[cidx_counter[3:0]];
-			d22 = p_input_r2[cidx_counter[3:0]];
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S8;
-		end
-		
-		S8: begin
-			// increment column counter
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter + incr;
-			
-			// retain write address
-			output_write_addr = p_output_write_addr;
-			
-			// set pipelined write address
-			set_s2_waddr = (p_cidx_counter == weight_dims) ? p_output_write_addr : s2_waddr;
-
-			// retain three input registers
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// if NEXT clock cycle past dims, request to load new row
-			// otherwise loop in this state
-			if (col_prep_oob & ~last_row_flag) begin
-				// increment read address
-				current_input_addr = p_current_input_addr + incr;
-				// load in NEXT row of input
-				dut_sram_read_address = current_input_addr;
-			end else begin
-				// retain values
-				current_input_addr = p_current_input_addr;
-				dut_sram_read_address = p_dut_sram_read_address;
-			end
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-
-			// set data inputs
-			d02 = p_input_r0[cidx_counter[3:0]];
-			d12 = p_input_r1[cidx_counter[3:0]];
-			d22 = p_input_r2[cidx_counter[3:0]];
-			
-			// set done flag to be pipelined in full adders
-			set_set_s2_done = (cidx_counter == weight_dims - incr) ? high : set_s2_done;
-
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = col_prep_oob ? S9 : S8;
-		end
-		
-		S9: begin
-			// increment column counter
-			cidx_counter = p_cidx_counter + incr;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// retain read address
-			current_input_addr = p_current_input_addr;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// set convolution indicicator
-			conv_go = last_row_flag ? low : high;
-
-			// set data inputs
-			d02 = p_input_r0[cidx_counter[3:0]];
-			d12 = p_input_r1[cidx_counter[3:0]];
-			d22 = p_input_r2[cidx_counter[3:0]];
-
-			// reset done flag to be pipelined in full adders
-			set_set_s2_done = low;
-
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			if (~last_row_flag) begin
-				// increase row counter
-				ridx_counter = p_ridx_counter + incr;
-				
-				// propagate rows upward
-				input_r0 = p_input_r1;
-				input_r1 = p_input_r2;
-				// store NEXT row of input
-				input_r2 = sram_dut_read_data;
-				
-				// increment write address
-				output_write_addr = p_output_write_addr + incr;
-				
-				// retain input read address
-				dut_sram_read_address = p_dut_sram_read_address;
-			
-				// go back to sweeping
-				next_state = S7;
-			end else begin
-				// reset row counter
-				ridx_counter = data_init;
-				
-				// retain values
-				input_r0 = p_input_r0;
-				input_r1 = p_input_r1;
-				input_r2 = p_input_r2;
-				output_write_addr = p_output_write_addr;
-				
-				// reset input read address interface
-				dut_sram_read_address = addr_init;
-				
-				// end, wrap up
-				next_state = SA;
-			end
-		end
-		
-		SA: begin
-			// counters retain value
-			ridx_counter = p_ridx_counter;
-			cidx_counter = p_cidx_counter;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// retain three input registers
-			input_r0 = p_input_r0;
-			input_r1 = p_input_r1;
-			input_r2 = p_input_r2;
-			
-			// reset input read address interface
-			dut_sram_read_address = addr_init;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// retain convolution indicicator
-			conv_go = p_conv_go;
-			
-			// retain data inputs
-			d02 = p_d02;
-			d12 = p_d12;
-			d22 = p_d22;
-			
-			// retain done flag to be pipelined in full adders
-			set_set_s2_done = set_s2_done;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// check s3_done, keep looping if high
-			if (s3_done) begin
-				// retain read and write address
-				current_input_addr = p_current_input_addr;
-				output_write_addr = p_output_write_addr;
-				// next state
-				next_state = SA;
-			end else begin
-				// increment both read and write address
-				current_input_addr = p_current_input_addr + incr;
-				output_write_addr = p_output_write_addr + incr;
-				// next state
-				next_state = S1;
-			end
-		end
-		
-		default: begin
-			// defaults
-			
-			// reset counters
-			ridx_counter = data_init;
-			cidx_counter = data_init;
-			
-			// reset read and write address
-			current_input_addr = addr_init;
-			output_write_addr = addr_init;
-			
-			// retain pipelined write address
-			set_s2_waddr = s2_waddr;
-			
-			// reset three input registers
-			input_r0 = data_init;
-			input_r1 = data_init;
-			input_r2 = data_init;
-			
-			// reset input read address interface
-			dut_sram_read_address = addr_init;
-			
-			// reset weight read address interface
-			dut_wmem_read_address = addr_init;
-			
-			// reset convolution indicicator
-			conv_go = low;
-			
-			// reset data inputs
-			d02 = low;
-			d12 = low;
-			d22 = low;
-			
-			// reset done flag to be pipelined in full adders
-			set_set_s2_done = low;
-			
-			// retain dut busy
-			set_dut_busy = dut_busy;
-			
-			// next state
-			next_state = S0;
-		end
-	endcase
-end
-// ========== FSM STATES ==========
-// ========== FSM STATES ==========
-
-// using register + always@* statement, because individual addresses
-// are being called instead of the entire register
-always@(*)
-begin
-	// if finished storing, reset 
-	if ((current_state == S0) | finished_storing) begin 
-		// reset values
-		output_row_temp = data_init;
-	end else begin
-		// otherwise retain values
-		output_row_temp = p_output_row_temp;
-	end
-	// only write to temp register when calculation is ready to be written
-	// and when the index does not exceed the maximum potential index
-	if (s3_done & ~(s3_idx > max_col_idx[3:0])) begin
-		// add to output for storing
-		output_row_temp[s3_idx] = ~negative_flag;
-	end else begin
-		// otherwise retain value
-		// output_row_temp = p_output_row_temp;
-		output_row_temp[s3_idx] = p_output_row_temp[s3_idx];
-	end
-end
-
-
-// ========== FSM WIRES ==========
-// ========== FSM WIRES ==========
-// reading weight information
-assign weight_dims = (current_state == S2) ? wmem_dut_read_data - incr : p_weight_dims;
-assign weight_data = (current_state == S3) ? wmem_dut_read_data : p_weight_data;
-
-// reading input information
-assign input_num_rows = (current_state == S2) ? sram_dut_read_data - incr : p_input_num_rows;
-assign input_num_cols = (current_state == S3) ? sram_dut_read_data - incr : p_input_num_cols;
-
-// load weights flag
-assign load_weights = (current_state == S4) ? high : low;
-
-// weight wires
-assign w02 = (current_state == S4) ? p_weight_data[2] : p_w02;
-assign w01 = (current_state == S4) ? p_weight_data[1] : p_w01;
-assign w00 = (current_state == S4) ? p_weight_data[0] : p_w00;
-assign w12 = (current_state == S4) ? p_weight_data[5] : p_w12;
-assign w11 = (current_state == S4) ? p_weight_data[4] : p_w11;
-assign w10 = (current_state == S4) ? p_weight_data[3] : p_w10;
-assign w22 = (current_state == S4) ? p_weight_data[8] : p_w22;
-assign w21 = (current_state == S4) ? p_weight_data[7] : p_w21;
-assign w20 = (current_state == S4) ? p_weight_data[6] : p_w20;
-
-// return same state indicator 
-assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_same_state_flag;
-// ========== FSM WIRES ==========
-// ========== FSM WIRES ==========
-
-
-// ========== FLAGS/INDICATORS ==========
-// ========== FLAGS/INDICATORS ==========
-// row and column out-of-bounds flags
-assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
-// assign last_row_flag = ((ridx_counter + incr) == p_input_num_rows);
-assign col_prep_oob = (cidx_counter == input_num_cols);
-// assign col_prep_oob = (p_cidx_counter == p_input_num_cols);
-
-// max index to be stored for convolution
-assign max_col_idx = input_num_cols - weight_dims;
-// assign max_col_idx = p_input_num_cols - p_weight_dims;
-
-// first condition indicates stored data + not done, meaning transitioning to calculating new row
-assign finished_storing = (~prev_s3_done & dut_sram_write_enable);
-// second condition indicates negative edge of "done" flag
-assign negedge_done = (~s3_done & prev_s3_done);
-// when set stored flag, write, etc
-assign set_dut_sram_write_enable = finished_storing ? low : (negedge_done ? high : dut_sram_write_enable);
-assign set_dut_sram_write_address = negedge_done ? s3_waddr : dut_sram_write_address;
-assign set_dut_sram_write_data = negedge_done ? p_output_row_temp : dut_sram_write_data;
-// ^^ SYNOPSYS SHOULD BE GOOD ^^
-
-// negative flag of currently rippled value
-// if value 5 or more, then negative. otherwise, positive
-// (out of 9 values, hence why '5' indicates majority)
-assign negative_flag = (ones & twos1 & twos2) | ((ones | twos1 | twos2) & fours);
-// ^^ SYNOPSYS SHOULD BE GOOD ^^
-
-// end condition met - stop reading
-assign end_condition_met = (sram_dut_read_data == end_condition);
-// ^^ SYNOPSYS SHOULD BE GOOD ^^
-// ========== FLAGS/INDICATORS ==========
-// ========== FLAGS/INDICATORS ==========
-
-
 // ========== EXTERNAL MODULES ==========
 // ========== EXTERNAL MODULES ==========
+// controller
+controller ctrl (	dut_run,
+					reset_b,
+					clk,
+					dut_sram_write_enable,
+					//
+					end_condition_met,
+					last_col_next,
+					last_row_flag,
+					
+					dut_busy_toggle,
+					
+					incr_col_enable,
+					incr_row_enable,
+					rst_col_counter,
+				
+					incr_raddr_enable,
+					incr_waddr_enable,
+					
+					rst_dut_wmem_read_address,
+					// nxt_dut_wmem_read_address,
+					str_weights_dims,
+					str_weights_data,
+					
+					str_input_nrows,
+					str_input_ncols,
+					pln_input_row_enable,
+					// str_input_data,
+					
+					update_d_in,
+					
+					load_weights_to_modules,
+					toggle_conv_go_flag,
+					
+					incr_output_addr,
+					
+					rst_output_row_temp
+					);
+
+// datapath
+datapath dp (	dut_busy,
+				reset_b,
+				clk,
+				dut_sram_write_address,
+				dut_sram_write_data,
+				dut_sram_write_enable,
+				dut_sram_read_address,
+				sram_dut_read_data,
+				dut_wmem_read_address,
+				wmem_dut_read_data,
+				//
+				dut_busy_toggle,
+				
+				incr_col_enable,
+				incr_row_enable,
+				rst_col_counter,
+				
+				incr_raddr_enable,
+				incr_waddr_enable,
+					
+				rst_dut_wmem_read_address,
+				// nxt_dut_wmem_read_address,
+				str_weights_dims,
+				str_weights_data,
+				
+				str_input_nrows,
+				str_input_ncols,
+				pln_input_row_enable,
+				// str_input_data,
+				
+				update_d_in,
+				
+				toggle_conv_go_flag,
+				
+				incr_output_addr,
+				
+				rst_output_row_temp,
+				
+				c00_out,
+				s1_ones,
+				s1_twos,
+				
+				negative_flag,
+				
+				last_col_next,
+				last_row_flag,
+				
+				weights_data,
+				d_in,
+				coli_in,
+				conv_go_flag,
+				output_addr,
+				
+				s2_ones,
+				s2_twos
+				);
+
 // instantiate convolution modules
 //  --> --> --> --> --> -->
 // [dyx] -> m02, m01, m00 ->
@@ -1077,17 +383,17 @@ assign end_condition_met = (sram_dut_read_data == end_condition);
 // [dyx] -> m22, m21, m20 ->
 //  --> --> --> --> --> -->
 // first row
-conv_module m02 (clk, reset_b, p_conv_go, p_load_weights, p_w02, p_d02, top_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d02_out, waddr02_out, c02_out, n02);
-conv_module m01 (clk, reset_b, p_conv_go, p_load_weights, p_w01, d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
-conv_module m00 (clk, reset_b, p_conv_go, p_load_weights, p_w00, d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
+conv_module m02 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[2], d_in[0], top_pipeline_idx, output_addr, coli_in, d02_out, waddr02_out, c02_out, n02);
+conv_module m01 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[1], d02_out, top_pipeline_idx, waddr02_out, c02_out, d01_out, waddr01_out, c01_out, n01);
+conv_module m00 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[0], d01_out, top_pipeline_idx, waddr01_out, c01_out, d00_out, waddr00_out, c00_out, n00);
 // second row
-conv_module m12 (clk, reset_b, p_conv_go, p_load_weights, p_w12, p_d12, rest_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d12_out, waddr12_out, c12_out, n12);
-conv_module m11 (clk, reset_b, p_conv_go, p_load_weights, p_w11, d12_out, rest_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
-conv_module m10 (clk, reset_b, p_conv_go, p_load_weights, p_w10, d11_out, rest_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
-// third row
-conv_module m22 (clk, reset_b, p_conv_go, p_load_weights, p_w22, p_d22, rest_pipeline_idx, p_output_write_addr, p_cidx_counter[3:0], d22_out, waddr22_out, c22_out, n22);
-conv_module m21 (clk, reset_b, p_conv_go, p_load_weights, p_w21, d22_out, rest_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
-conv_module m20 (clk, reset_b, p_conv_go, p_load_weights, p_w20, d21_out, rest_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
+conv_module m12 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[5], d_in[1], blw_pipeline_idx, output_addr, coli_in, d12_out, waddr12_out, c12_out, n12);
+conv_module m11 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[4], d12_out, blw_pipeline_idx, waddr12_out, c12_out, d11_out, waddr11_out, c11_out, n11);
+conv_module m10 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[3], d11_out, blw_pipeline_idx, waddr11_out, c11_out, d10_out, waddr10_out, c10_out, n10);
+// third row 
+conv_module m22 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[8], d_in[2], blw_pipeline_idx, output_addr, coli_in, d22_out, waddr22_out, c22_out, n22);
+conv_module m21 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[7], d22_out, blw_pipeline_idx, waddr22_out, c22_out, d21_out, waddr21_out, c21_out, n21);
+conv_module m20 (clk, reset_b, conv_go_flag, load_weights_to_modules, weights_data[6], d21_out, blw_pipeline_idx, waddr21_out, c21_out, d20_out, waddr20_out, c20_out, n20);
 
 // instantiate adders for pos/neg calculation
 // input stage 1 -> output stage 2
@@ -1095,9 +401,27 @@ full_adder FA1_s1 (n02, n01, n00, FA1_s1_ones, FA1_s1_twos);
 full_adder FA2_s1 (n12, n11, n10, FA2_s1_ones, FA2_s1_twos);
 full_adder FA3_s1 (n22, n21, n20, FA3_s1_ones, FA3_s1_twos);
 // input stage 2 -> output stage 3
-full_adder FA1_s2 (FA1_s2_in1, FA1_s2_in2, FA1_s2_in3, FA1_s2_ones, FA1_s2_twos);
-full_adder FA2_s2 (FA2_s2_in1, FA2_s2_in2, FA2_s2_in3, FA2_s2_twos, FA2_s2_fours);
+full_adder FA1_s2 (s2_ones[0], s2_ones[1], s2_ones[2], FA1_s2_ones, FA1_s2_twos);
+full_adder FA2_s2 (s2_twos[0], s2_twos[1], s2_twos[2], FA2_s2_twos, FA2_s2_fours);
 // ========== EXTERNAL MODULES ==========
 // ========== EXTERNAL MODULES ==========
+
+
+// ========== FLAGS/INDICATORS ==========
+// ========== FLAGS/INDICATORS ==========
+// end condition met - stop reading
+assign end_condition_met = (sram_dut_read_data == end_condition);
+
+// to decrease clock period, add flipflops between full adder stages
+assign s1_ones = { FA3_s1_ones, FA2_s1_ones, FA1_s1_ones };
+assign s1_twos = { FA3_s1_twos, FA2_s1_twos, FA1_s1_twos };
+
+// negative flag of currently rippled value
+// if value 5 or more, then negative. otherwise, positive
+// (out of 9 values, hence why '5' indicates majority)
+assign negative_flag = (FA1_s2_ones & FA1_s2_twos & FA2_s2_twos) | ((FA1_s2_ones | FA1_s2_twos | FA2_s2_twos) & FA2_s2_fours);
+
+// ========== FLAGS/INDICATORS ==========
+// ========== FLAGS/INDICATORS ==========
 
 endmodule
