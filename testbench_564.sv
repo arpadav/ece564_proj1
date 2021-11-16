@@ -137,10 +137,8 @@ module tb_top();
       reset_b=1;
       for(j=0;j<ROUND;j=j+1) begin
          if(j!=0) wait(checkFinish[j-1]);
-         input_mem.loadInitFile("./input_sram.dat");
-         weight_mem.loadInitFile("./weight_sram.dat");
-         // input_mem.loadInitFile($sformatf("input_%0d/input_sram.dat",j));
-         // weight_mem.loadInitFile($sformatf("input_%0d/weight_sram.dat",j));
+         input_mem.loadInitFile($sformatf("input_%0d/input_sram.dat",j));
+         weight_mem.loadInitFile($sformatf("input_%0d/weight_sram.dat",j));
 			
 		repeat(5) @(posedge clk);
 		wait(dut_busy==0);
@@ -183,8 +181,7 @@ module tb_top();
 
        if (q==0)
 		//$writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_464);
-		// $writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_564);
-		$writememb("./result.dat",output_mem.mem,12'h000,ADDR_564);
+		$writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_564);
        //else
 	//	$writememb($sformatf("input_%0d/result.dat",q),output_mem.mem,12'h000,ADDR_ONE);
 	
@@ -196,12 +193,10 @@ module tb_top();
 	// Result comparator 
 	// Compare your compute results with the results computed by Python script
        $display("-------------------------------load results to output_array-------------------------------\n");
-       // $readmemb($sformatf("input_%0d/result.dat",q),result_array);
-       $readmemb("./result.dat",result_array);
+       $readmemb($sformatf("input_%0d/result.dat",q),result_array);
 
        $display("-------------------------------load results to golden_output_array-------------------------------\n");
-       // $readmemb($sformatf("input_%0d/golden_outputs.dat",q),golden_result_array);
-       $readmemb("./golden_outputs.dat",golden_result_array);
+       $readmemb($sformatf("input_%0d/golden_outputs.dat",q),golden_result_array);
 	   
 	   $display("-------------------------------Round %0d start compare -------------------------------\n",q);
             //if(q==0)begin
