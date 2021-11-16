@@ -286,10 +286,16 @@ controller ctrl (	dut_run,
 					// dut_sram_write_enable,
 					//
 					end_condition_met,
+					
+					initialization_flag,
+					
 					last_col_next,
 					last_row_flag,
 					
 					dut_busy_toggle,
+					
+					set_initialization_flag,
+					reset_initialization_flag,
 					
 					incr_col_enable,
 					incr_row_enable,
@@ -368,6 +374,8 @@ datapath dp (	dut_busy,
 				s1_twos,
 				
 				negative_flag,
+				
+				initialization_flag,
 				
 				last_col_next,
 				last_row_flag,

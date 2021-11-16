@@ -14,11 +14,17 @@ module controller (	dut_run,
 					// my stuff
 					// inputs
 					end_condition_met,
+					
+					initialization_flag,
+					
 					last_col_next,
 					last_row_flag,
 					
 					// outputs
 					dut_busy_toggle,
+					
+					set_initialization_flag,
+					reset_initialization_flag,
 					
 					incr_col_enable,
 					incr_row_enable,
@@ -92,6 +98,9 @@ input last_row_flag;
 // output reg dut_sram_write_enable;
 
 output reg dut_busy_toggle;
+
+output reg set_initialization_flag;
+output reg reset_initialization_flag;
 
 output reg incr_col_enable;
 output reg incr_row_enable;
@@ -225,6 +234,8 @@ begin
 	
 	dut_busy_toggle = low;
 	
+	set_initialization_flag = low;
+	
 	incr_col_enable = low;
 	incr_row_enable = low;
 	rst_col_counter = low;
@@ -277,6 +288,9 @@ begin
 			
 			// store weight dimensions
 			str_weights_dims = high;
+			
+			// initializing flag
+			set_initialization_flag = high;
 		end
 		
 		S2: begin
@@ -287,6 +301,9 @@ begin
 			
 			// store weight values
 			str_weights_data = high;
+			
+			// reset initializing flag if end
+			reset_initialization_flag = end_condition_met;
 			
 			// set dut_busy flag
 			// dut_busy_toggle = end_condition_met ? high : low;
@@ -325,6 +342,9 @@ begin
 			
 			// set convolution flag to high
 			toggle_conv_go_flag = high;
+			
+			// reset initializing flag, running
+			reset_initialization_flag = high;
 		end
 		
 		S8: begin
@@ -336,6 +356,9 @@ begin
 			
 			// if moving to S9, increment read address 
 			incr_raddr_enable = last_col_next;
+			
+			// write row here
+			str_temp_to_write = ~initialization_flag;
 		end
 		
 		S9: begin
@@ -366,8 +389,7 @@ begin
 		end
 		
 		SB: begin
-			// write row here
-			str_temp_to_write = high;
+			
 		end
 		
 		SC: begin

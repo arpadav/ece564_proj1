@@ -15,6 +15,9 @@ module datapath (	//dut_run,
 					// inputs
 					dut_busy_toggle,
 					
+					set_initialization_flag,
+					reset_initialization_flag,
+					
 					incr_col_enable,
 					incr_row_enable,
 					rst_col_counter,
@@ -50,6 +53,8 @@ module datapath (	//dut_run,
 					negative_flag,
 					
 					// outputs
+					initialization_flag,
+					
 					last_col_next,
 					last_row_flag,
 					
@@ -100,6 +105,9 @@ output wire dut_sram_write_enable;
 
 input dut_busy_toggle;
 
+input set_initialization_flag;
+input reset_initialization_flag;
+
 input incr_col_enable;
 input incr_row_enable;
 input rst_col_counter;
@@ -133,6 +141,9 @@ input [2:0] s1_ones;
 input [2:0] s1_twos;
 
 input negative_flag;
+
+
+output reg initialization_flag;
 
 output reg last_col_next;
 output reg last_row_flag;
@@ -379,6 +390,11 @@ always@(posedge clk or negedge reset_b)
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) conv_go_flag <= low;
 	else if (toggle_conv_go_flag) conv_go_flag <= ~conv_go_flag;
+	
+// Initialization Flag
+always@(posedge clk or negedge reset_b)
+	if (!reset_b | reset_initialization_flag) initialization_flag <= low;
+	else if (set_initialization_flag) initialization_flag <= high;
 // ========== FLAGS / INDICATORS ==========
 // ========== FLAGS / INDICATORS ==========
 endmodule
