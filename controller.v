@@ -215,17 +215,18 @@ begin
 	case(current_state)
 		S0: next_state = dut_run ? S1 : S0;
 		S1: next_state = S2;
-		S2: next_state = end_condition_met ? S0 : S3;
+		S2: next_state = S3;
 		S3: next_state = S4;
 		S4: next_state = S5;
 		S5: next_state = S6;
 		S6: next_state = S7;
 		S7: next_state = S8;
-		S8: next_state = last_col_next ? S9 : S8;
+		S8: next_state = end_condition_met ? SD : (last_col_next ? S9 : S8);
 		S9: next_state = SA;
 		SA: next_state = SB;
 		SB: next_state = last_row_flag ? SC : S7;
 		SC: next_state = S1; //s3_done ? SA : S1;
+		SD: next_state = S0;
 		default: next_state = S0;
 	endcase
 	
@@ -238,6 +239,7 @@ begin
 	dut_busy_toggle = low;
 	
 	set_initialization_flag = low;
+	reset_initialization_flag = low;
 	
 	incr_col_enable = low;
 	incr_row_enable = low;
@@ -402,6 +404,11 @@ begin
 			rst_dut_wmem_read_address = high;
 			// 
 			// incr_waddr_enable = high;
+		end
+		
+		SD: begin
+			// reset dut_busy flag
+			dut_busy_toggle = high;
 		end
 		
 		default: begin
