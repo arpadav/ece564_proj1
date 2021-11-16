@@ -349,6 +349,9 @@ begin
 			
 			// set convolution flag to high
 			toggle_conv_go_flag = high;
+			
+			// write row here
+			dut_sram_write_enable = high;
 		end
 		
 		SA: begin

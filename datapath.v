@@ -200,7 +200,7 @@ reg [15:0] input_r2;
 
 // maximum row and column index for writing
 reg [3:0] max_col_idx;
-reg [3:0] max_row_idx;
+// reg [3:0] max_row_idx;
 
 // write index
 reg [3:0] writ_idx;
@@ -261,10 +261,10 @@ always@(posedge clk or negedge reset_b)
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) begin 
 		input_num_rows <= data_init;
-		max_row_idx <= indx_init;
+		// max_row_idx <= indx_init;
 	end else if (str_input_nrows) begin
 		input_num_rows <= sram_dut_read_data - incr;
-		max_row_idx <= sram_dut_read_data - incr - weights_dims;
+		// max_row_idx <= sram_dut_read_data - incr - weights_dims;
 	end
 
 // Store Number of Input Columns
@@ -347,7 +347,7 @@ always@(posedge clk or negedge reset_b)
 		last_row_flag <= low;
 	end else if (incr_row_enable) begin 
 		ridx_counter <= ridx_counter + incr;
-		last_row_flag <= max_row_idx == ridx_counter + incr;
+		last_row_flag <= input_num_rows == ridx_counter + incr;
 	end
 
 // Convolution Module Pipeline Write Address
