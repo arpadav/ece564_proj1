@@ -349,14 +349,17 @@ begin
 			
 			// set convolution flag to high
 			toggle_conv_go_flag = high;
-			
-			// write row here
-			dut_sram_write_enable = high;
 		end
 		
 		SA: begin
 			// read in next row and pipeline the rest
 			pln_input_row_enable = high;
+			
+			// write row here
+			dut_sram_write_enable = high;
+			
+			// 
+			incr_waddr_enable = high;
 		end
 		
 		SB: begin
