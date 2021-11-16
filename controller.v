@@ -25,6 +25,9 @@ module controller (	dut_run,
 					
 					incr_raddr_enable,
 					
+					rst_dut_sram_write_address,
+					rst_dut_sram_read_address,
+					
 					rst_dut_wmem_read_address,
 					str_weights_dims,
 					str_weights_data,
@@ -76,6 +79,9 @@ output reg rst_row_counter;
 
 output reg incr_raddr_enable;
 // output reg incr_waddr_enable;
+
+output reg rst_dut_sram_write_address;
+output reg rst_dut_sram_read_address;
 
 output reg rst_dut_wmem_read_address;
 output reg str_weights_dims;
@@ -187,6 +193,9 @@ begin
 	
 	incr_raddr_enable = low;
 	// incr_waddr_enable = low;
+	
+	rst_dut_sram_write_address = low;
+	rst_dut_sram_read_address = low;
 	
 	rst_dut_wmem_read_address = low;
 	str_weights_dims = low;
@@ -329,6 +338,13 @@ begin
 		SD: begin
 			// reset dut_busy flag
 			dut_busy_toggle = high;
+			toggle_conv_go_flag = high;
+			// reset stuff
+			rst_output_row_temp = high;
+			rst_col_counter = high;
+			rst_row_counter = high;
+			rst_dut_sram_write_address = high;
+			rst_dut_sram_read_address = high;
 		end
 		
 		default: begin end

@@ -24,6 +24,9 @@ module datapath (	dut_busy,
 					
 					incr_raddr_enable,
 					
+					rst_dut_sram_write_address,
+					rst_dut_sram_read_address,
+					
 					rst_dut_wmem_read_address,
 					str_weights_dims,
 					str_weights_data,
@@ -104,6 +107,9 @@ input rst_col_counter;
 input rst_row_counter;
 
 input incr_raddr_enable;
+
+input rst_dut_sram_write_address;
+input rst_dut_sram_read_address;
 
 input rst_dut_wmem_read_address;
 input str_weights_dims;
@@ -227,12 +233,12 @@ always@(posedge clk or negedge reset_b)
 // Reset, Increment SRAM Read Address
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) dut_sram_read_address <= addr_init;
-	else if (incr_raddr_enable) dut_sram_read_address <= dut_sram_read_address + incr;
+	else if (incr_raddr_enable) dut_sram_read_address <= rst_dut_sram_read_address ? addr_init : dut_sram_read_address + incr;
 
 // Reset, Increment SRAM Write Address
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) dut_sram_write_address <= addr_init;
-	else if (dut_sram_write_enable) dut_sram_write_address <= dut_sram_write_address + incr;
+	else if (dut_sram_write_enable) dut_sram_write_address <= rst_dut_sram_write_address ? addr_init : dut_sram_write_address + incr;
 	// incr_waddr_enable
 
 // Reset, Set SRAM Write Data

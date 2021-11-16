@@ -176,6 +176,9 @@ controller ctrl (	dut_run,
 					incr_raddr_enable,
 					// incr_waddr_enable,
 					
+					rst_dut_sram_write_address,
+					rst_dut_sram_read_address,
+					
 					rst_dut_wmem_read_address,
 					// nxt_dut_wmem_read_address,
 					str_weights_dims,
@@ -222,7 +225,10 @@ datapath dp (	dut_busy,
 				
 				incr_raddr_enable,
 				// incr_waddr_enable,
-					
+				
+				rst_dut_sram_write_address,
+				rst_dut_sram_read_address,
+				
 				rst_dut_wmem_read_address,
 				// nxt_dut_wmem_read_address,
 				str_weights_dims,
