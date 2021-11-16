@@ -33,6 +33,8 @@ module datapath (	//dut_run,
 					pln_input_row_enable,
 					// str_input_data,
 					
+					str_temp_to_write,
+					
 					update_d_in,
 					
 					toggle_conv_go_flag,
@@ -215,6 +217,9 @@ wire [3:0] call_idx;
 assign call_idx = cidx_counter[3:0];
 assign cidx_out = cidx_counter[3:0] - incr;
 
+// falling edge of storing temp array
+assign dut_sram_write_enable = ~str_temp_to_write & p_str_temp_to_write;
+
 // ========== MEM INTERFACE ==========
 // ========== MEM INTERFACE ==========
 // DUT Busy TFF
@@ -240,7 +245,7 @@ always@(posedge clk or negedge reset_b)
 // Reset, Set SRAM Write Data
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) dut_sram_write_data <= data_init;
-	else if (dut_sram_write_enable) dut_sram_write_data <= output_row_temp;
+	else if (str_temp_to_write) dut_sram_write_data <= output_row_temp;
 	
 // Store Weight Dimensions
 always@(posedge clk or negedge reset_b)
@@ -251,6 +256,10 @@ always@(posedge clk or negedge reset_b)
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) weights_data <= data_init;
 	else if (str_weights_data) weights_data <= wmem_dut_read_data;
+	
+// For Write Enable: Falling Edge of Storing Flag of Output Register
+always@(posedge clk)
+	p_str_temp_to_write <= str_temp_to_write;
 // ========== MEM INTERFACE ==========
 // ========== MEM INTERFACE ==========
 

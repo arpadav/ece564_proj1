@@ -309,6 +309,8 @@ controller ctrl (	dut_run,
 					pln_input_row_enable,
 					// str_input_data,
 					
+					str_temp_to_write,
+					
 					update_d_in,
 					
 					load_weights_to_modules,
@@ -350,6 +352,8 @@ datapath dp (	dut_busy,
 				str_input_ncols,
 				pln_input_row_enable,
 				// str_input_data,
+				
+				str_temp_to_write,
 				
 				update_d_in,
 				

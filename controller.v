@@ -5,7 +5,7 @@ module controller (	dut_run,
 					clk,
 					// dut_sram_write_address,
 					// dut_sram_write_data,
-					dut_sram_write_enable,
+					// dut_sram_write_enable,
 					// dut_sram_read_address,
 					// sram_dut_read_data,
 					// dut_wmem_read_address,
@@ -37,6 +37,8 @@ module controller (	dut_run,
 					str_input_ncols,
 					pln_input_row_enable,
 					// str_input_data,
+					
+					str_temp_to_write,
 					
 					update_d_in,
 					
@@ -87,7 +89,7 @@ input end_condition_met;
 input last_col_next;
 input last_row_flag;
 
-output reg dut_sram_write_enable;
+// output reg dut_sram_write_enable;
 
 output reg dut_busy_toggle;
 
@@ -216,7 +218,7 @@ begin
 	// ========== LOGIC FOR OUTPUTS ==========
 	
 	// defaults
-	dut_sram_write_enable = low;
+	// dut_sram_write_enable = low;
 	
 	dut_busy_toggle = low;
 	
@@ -236,6 +238,8 @@ begin
 	str_input_nrows = low;
 	str_input_ncols = low;
 	pln_input_row_enable = low;
+	
+	str_temp_to_write = low;
 	
 	update_d_in = low;
 	
@@ -354,12 +358,8 @@ begin
 		SA: begin
 			// read in next row and pipeline the rest
 			pln_input_row_enable = high;
-			
 			// write row here
-			dut_sram_write_enable = high;
-			
-			// 
-			incr_waddr_enable = high;
+			str_temp_to_write = high;
 		end
 		
 		SB: begin
@@ -369,6 +369,8 @@ begin
 			rst_row_counter = high;
 			// 
 			rst_dut_wmem_read_address = high;
+			// 
+			incr_waddr_enable = high;
 		end
 		
 		default: begin
