@@ -245,8 +245,8 @@ always@(posedge clk or negedge reset_b)
 
 // Reset, Set WeightMem Read Address
 always@(posedge clk or negedge reset_b)
-	if (!rst_dut_wmem_read_address) dut_wmem_read_address <= addr_init;
-	else dut_wmem_read_address <= weights_data_addr;
+	if (!reset_b) dut_wmem_read_address <= addr_init;
+	else dut_wmem_read_address <= rst_dut_wmem_read_address ? weights_data_addr : addr_init;
 
 // Reset, Increment SRAM Read Address
 always@(posedge clk or negedge reset_b)
@@ -394,8 +394,8 @@ always@(posedge clk or negedge reset_b)
 	
 // Initialization Flag
 always@(posedge clk or negedge reset_b)
-	if (!reset_b || rst_initialization_flag) initialization_flag <= low;
-	else if (set_initialization_flag) initialization_flag <= high;
+	if (!reset_b) initialization_flag <= low;
+	else if (set_initialization_flag) initialization_flag <= ~rst_initialization_flag;
 // ========== FLAGS / INDICATORS ==========
 // ========== FLAGS / INDICATORS ==========
 endmodule
