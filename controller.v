@@ -26,7 +26,7 @@ module controller (	dut_run,
 					rst_row_counter,
 					
 					incr_raddr_enable,
-					incr_waddr_enable,
+					// incr_waddr_enable,
 					
 					rst_dut_wmem_read_address,
 					// nxt_dut_wmem_read_address,
@@ -99,7 +99,7 @@ output reg rst_col_counter;
 output reg rst_row_counter;
 
 output reg incr_raddr_enable;
-output reg incr_waddr_enable;
+// output reg incr_waddr_enable;
 
 output reg rst_dut_wmem_read_address;
 // output reg [11:0] nxt_dut_wmem_read_address;
@@ -230,7 +230,7 @@ begin
 	rst_row_counter = low;
 	
 	incr_raddr_enable = low;
-	incr_waddr_enable = low;
+	// incr_waddr_enable = low;
 	
 	rst_dut_wmem_read_address = low;
 	// nxt_dut_wmem_read_address = addr_init;
@@ -372,7 +372,7 @@ begin
 			// 
 			rst_dut_wmem_read_address = high;
 			// 
-			incr_waddr_enable = high;
+			// incr_waddr_enable = high;
 		end
 		
 		default: begin

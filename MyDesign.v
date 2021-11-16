@@ -297,7 +297,7 @@ controller ctrl (	dut_run,
 					rst_row_counter,
 				
 					incr_raddr_enable,
-					incr_waddr_enable,
+					// incr_waddr_enable,
 					
 					rst_dut_wmem_read_address,
 					// nxt_dut_wmem_read_address,
@@ -341,7 +341,7 @@ datapath dp (	dut_busy,
 				rst_row_counter,
 				
 				incr_raddr_enable,
-				incr_waddr_enable,
+				// incr_waddr_enable,
 					
 				rst_dut_wmem_read_address,
 				// nxt_dut_wmem_read_address,

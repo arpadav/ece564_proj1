@@ -21,7 +21,7 @@ module datapath (	//dut_run,
 					rst_row_counter,
 					
 					incr_raddr_enable,
-					incr_waddr_enable,
+					// incr_waddr_enable,
 					
 					rst_dut_wmem_read_address,
 					// nxt_dut_wmem_read_address,
@@ -106,7 +106,7 @@ input rst_col_counter;
 input rst_row_counter;
 
 input incr_raddr_enable;
-input incr_waddr_enable;
+// input incr_waddr_enable;
 
 input rst_dut_wmem_read_address;
 // input [11:0] nxt_dut_wmem_read_address;
@@ -245,7 +245,8 @@ always@(posedge clk or negedge reset_b)
 // Reset, Increment SRAM Write Address
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) dut_sram_write_address <= addr_init;
-	else if (incr_waddr_enable) dut_sram_write_address <= dut_sram_write_address + incr;
+	else if (dut_sram_write_enable) dut_sram_write_address <= dut_sram_write_address + incr;
+	// incr_waddr_enable
 
 // Reset, Set SRAM Write Data
 always@(posedge clk or negedge reset_b)
