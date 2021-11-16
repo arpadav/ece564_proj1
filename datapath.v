@@ -1,6 +1,5 @@
-// ece 564 - project 1 - Arpad Voros
-module datapath (	//dut_run,
-					dut_busy,
+// ece564 - project 1 - Arpad Voros
+module datapath (	dut_busy,
 					reset_b,
 					clk,
 					dut_sram_write_address,
@@ -24,17 +23,14 @@ module datapath (	//dut_run,
 					rst_row_counter,
 					
 					incr_raddr_enable,
-					// incr_waddr_enable,
 					
 					rst_dut_wmem_read_address,
-					// nxt_dut_wmem_read_address,
 					str_weights_dims,
 					str_weights_data,
 				
 					str_input_nrows,
 					str_input_ncols,
 					pln_input_row_enable,
-					// str_input_data,
 					
 					str_temp_to_write,
 					
@@ -42,7 +38,7 @@ module datapath (	//dut_run,
 					
 					toggle_conv_go_flag,
 					
-					incr_output_addr,
+					// incr_output_addr,
 					
 					rst_output_row_temp,
 					
@@ -63,20 +59,20 @@ module datapath (	//dut_run,
 					d_in,
 					cidx_out,
 					conv_go_flag,
-					output_addr,
+					// output_addr,
 					
 					s2_ones,
 					s2_twos
 					);
-					
+
+// datapath - using control signals from controller
+// 				manipulates registers + data, reads
+// 				and writes through top
+
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
-/* // if 1, do convolution
-input dut_run; */
-// set to 1 if calculating, 0 once done and stored
+// busy flag
 output reg dut_busy;
-// wire set_dut_busy;
-// reg set_dut_busy;
 
 // reset and clock
 input reset_b;
@@ -84,13 +80,11 @@ input clk;
 
 // dut -> sram (input)
 output reg [11:0] dut_sram_read_address;
-// reg [11:0] p_dut_sram_read_address;
 // sram -> dut (input)
 input [15:0] sram_dut_read_data;
 
 // dut -> sram (weights)
 output reg [11:0] dut_wmem_read_address;
-// reg [11:0] p_dut_wmem_read_address;
 // sram -> dut (weights)
 input [15:0] wmem_dut_read_data;
 
@@ -98,10 +92,6 @@ input [15:0] wmem_dut_read_data;
 output reg [11:0] dut_sram_write_address;
 output reg [15:0] dut_sram_write_data;
 output wire dut_sram_write_enable;
-// wire [11:0] set_dut_sram_write_address;
-// wire [15:0] set_dut_sram_write_data;
-
-// wire set_dut_sram_write_enable;
 
 input dut_busy_toggle;
 
@@ -114,17 +104,14 @@ input rst_col_counter;
 input rst_row_counter;
 
 input incr_raddr_enable;
-// input incr_waddr_enable;
 
 input rst_dut_wmem_read_address;
-// input [11:0] nxt_dut_wmem_read_address;
 input str_weights_dims;
 input str_weights_data;
 
 input str_input_nrows;
 input str_input_ncols;
 input pln_input_row_enable;
-// input str_input_data;
 
 input str_temp_to_write;
 
@@ -132,7 +119,7 @@ input update_d_in;
 
 input toggle_conv_go_flag;
 
-input incr_output_addr;
+// input incr_output_addr;
 
 input rst_output_row_temp;
 
@@ -142,6 +129,7 @@ input [2:0] s1_twos;
 
 input negative_flag;
 
+//
 
 output reg initialization_flag;
 
@@ -152,11 +140,10 @@ output reg [15:0] weights_data;
 output reg [2:0] d_in;
 output wire [3:0] cidx_out;
 output reg conv_go_flag;
-output reg [11:0] output_addr;
+// output reg [11:0] output_addr;
 
 output reg [2:0] s2_ones;
 output reg [2:0] s2_twos;
-
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
 
@@ -166,10 +153,6 @@ output reg [2:0] s2_twos;
 // high and low, used for flags and whatnot
 parameter high = 1'b1;
 parameter low = 1'b0;
-
-/* // indicates which modules pass the indicies
-parameter top_pipeline_idx = 1'b1;
-parameter rest_pipeline_idx = 1'b0; */
 
 // since weights is limited to 3x3, ONLY second address needed for weights
 // parameter weights_dims_addr = 12'h0;
@@ -184,7 +167,6 @@ parameter indx_init = 4'h0;
 parameter addr_init = 12'h0;
 parameter data_init = 16'h0;
 parameter cntr_init = 16'h0;
-
 // ========== PARAMETERS ==========
 // ========== PARAMETERS ==========
 
@@ -197,11 +179,6 @@ reg [15:0] cidx_counter;
 
 // store weight dimensions, data
 reg [15:0] weights_dims;
-// wire [15:0] weights_data;
-
-/* // store current read and write address
-reg [11:0] curr_read_addr;
-reg [11:0] curr_writ_addr; */
 
 // store number of input rows, columns
 reg [15:0] input_num_rows;
@@ -215,7 +192,6 @@ reg [15:0] input_r2;
 
 // maximum row and column index for writing
 reg [3:0] max_col_idx;
-// reg [3:0] max_row_idx;
 
 // write index
 reg [3:0] writ_idx;
@@ -330,8 +306,6 @@ always@(posedge clk or negedge reset_b)
 	if (!reset_b) output_row_temp <= data_init;
 	else if (rst_output_row_temp) output_row_temp <= data_init;
 	else if (writ_idx <= max_col_idx) output_row_temp[writ_idx] <= ~negative_flag;
-		// else output_row_temp[writ_idx] <= output_row_temp[writ_idx]
-	// end
 
 // Pipeline Full Adder Stage 1 -> 2
 always@(posedge clk or negedge reset_b)
@@ -362,7 +336,6 @@ always@(posedge clk or negedge reset_b)
 		cidx_counter <= cidx_counter + incr;
 		last_col_next <= input_num_cols == cidx_counter + incr;
 	end
-	// end
 
 // Row Counter
 always@(posedge clk or negedge reset_b)
@@ -377,10 +350,10 @@ always@(posedge clk or negedge reset_b)
 		last_row_flag <= input_num_rows == ridx_counter + incr;
 	end
 
-// Convolution Module Pipeline Write Address
+/* // Convolution Module Pipeline Write Address
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) output_addr <= addr_init;
-	else if (incr_output_addr) output_addr <= output_addr + incr;
+	else if (incr_output_addr) output_addr <= output_addr + incr; */
 // ========== COUNTERS ==========
 // ========== COUNTERS ==========
 
@@ -398,4 +371,5 @@ always@(posedge clk or negedge reset_b)
 	else if (set_initialization_flag) initialization_flag <= ~rst_initialization_flag;
 // ========== FLAGS / INDICATORS ==========
 // ========== FLAGS / INDICATORS ==========
+
 endmodule

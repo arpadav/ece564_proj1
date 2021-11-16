@@ -1,15 +1,7 @@
-// ece 564 - project 1 - Arpad Voros
+// ece564 - project 1 - Arpad Voros
 module controller (	dut_run,
-					//dut_busy,
 					reset_b,
 					clk,
-					// dut_sram_write_address,
-					// dut_sram_write_data,
-					// dut_sram_write_enable,
-					// dut_sram_read_address,
-					// sram_dut_read_data,
-					// dut_wmem_read_address,
-					// wmem_dut_read_data,
 					
 					// my stuff
 					// inputs
@@ -32,17 +24,14 @@ module controller (	dut_run,
 					rst_row_counter,
 					
 					incr_raddr_enable,
-					// incr_waddr_enable,
 					
 					rst_dut_wmem_read_address,
-					// nxt_dut_wmem_read_address,
 					str_weights_dims,
 					str_weights_data,
 					
 					str_input_nrows,
 					str_input_ncols,
 					pln_input_row_enable,
-					// str_input_data,
 					
 					str_temp_to_write,
 					
@@ -51,45 +40,22 @@ module controller (	dut_run,
 					load_weights_to_modules,
 					toggle_conv_go_flag,
 					
-					incr_output_addr,
+					// incr_output_addr,
 					
 					rst_output_row_temp
 					);
-					
-// ========== IO INTERFACE ==========
-// ========== IO INTERFACE ==========
 
-// if 1, do convolution
+// controller - logic controller, sets flags
+// 				and indicators and such
+
+// ========== IO INTERFACE ==========
+// ========== IO INTERFACE ==========
+// run flag from top
 input dut_run;
-
-// set to 1 if calculating, 0 once done and stored
-// output reg dut_busy;
-// wire dut_busy_toggle;
-// reg dut_busy_toggle;
 
 // reset and clock
 input reset_b;
 input clk;
-
-/* // dut -> sram (input)
-output reg [11:0] dut_sram_read_address;
-// reg [11:0] p_dut_sram_read_address;
-// sram -> dut (input)
-input [15:0] sram_dut_read_data;
-
-// dut -> sram (weights)
-output reg [11:0] dut_wmem_read_address;
-// reg [11:0] p_dut_wmem_read_address;
-// sram -> dut (weights)
-input [15:0] wmem_dut_read_data;
-
-// dut -> sram (output)
-output reg [11:0] dut_sram_write_address;
-output reg [15:0] dut_sram_write_data;
-output reg dut_sram_write_enable;
-// wire [11:0] set_dut_sram_write_address;
-// wire [15:0] set_dut_sram_write_data;
-// wire set_dut_sram_write_enable; */
 
 input end_condition_met;
 
@@ -97,8 +63,6 @@ input initialization_flag;
 
 input last_col_next;
 input last_row_flag;
-
-// output reg dut_sram_write_enable;
 
 output reg dut_busy_toggle;
 
@@ -114,7 +78,6 @@ output reg incr_raddr_enable;
 // output reg incr_waddr_enable;
 
 output reg rst_dut_wmem_read_address;
-// output reg [11:0] nxt_dut_wmem_read_address;
 output reg str_weights_dims;
 output reg str_weights_data;
 
@@ -129,10 +92,9 @@ output reg update_d_in;
 output reg load_weights_to_modules;
 output reg toggle_conv_go_flag;
 
-output reg incr_output_addr;
+// output reg incr_output_addr;
 
 output reg rst_output_row_temp;
-
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
 
@@ -142,26 +104,6 @@ output reg rst_output_row_temp;
 // high and low, used for flags and whatnot
 parameter high = 1'b1;
 parameter low = 1'b0;
-
-/* // indicates which modules pass the indicies
-parameter top_pipeline_idx = 1'b1;
-parameter rest_pipeline_idx = 1'b0; */
-
-/* // since weights is limited to 3x3, ONLY second address needed for weights
-parameter weights_dims_addr = 12'h0;
-parameter weights_data_addr = 12'h1; */
-
-/* // increment everything by this much
-parameter incr = 1'b1; */
-
-// initial index, address, counter
-parameter addr_init = 12'h0;
-/* parameter indx_init = 4'h0;
-parameter data_init = 16'h0; */
-
-/* // end condition
-parameter end_condition = 16'h00FF;
- */
 
 // states
 parameter [3:0]
@@ -225,17 +167,14 @@ begin
 		S9: next_state = SA;
 		SA: next_state = SB;
 		SB: next_state = last_row_flag ? SC : S7;
-		SC: next_state = S1; //s3_done ? SA : S1;
+		SC: next_state = S1;
 		SD: next_state = S0;
 		default: next_state = S0;
 	endcase
 	
 	// ========== LOGIC FOR OUTPUTS ==========
 	// ========== LOGIC FOR OUTPUTS ==========
-	
-	// defaults
-	// dut_sram_write_enable = low;
-	
+	// defaults	
 	dut_busy_toggle = low;
 	
 	set_initialization_flag = low;
@@ -250,7 +189,6 @@ begin
 	// incr_waddr_enable = low;
 	
 	rst_dut_wmem_read_address = low;
-	// nxt_dut_wmem_read_address = addr_init;
 	str_weights_dims = low;
 	str_weights_data = low;
 	
@@ -265,7 +203,7 @@ begin
 	load_weights_to_modules = low;
 	toggle_conv_go_flag = low;
 	
-	incr_output_addr = low;
+	// incr_output_addr = low;
 	
 	rst_output_row_temp = low;
 	
@@ -309,9 +247,6 @@ begin
 			
 			// reset initializing flag if end
 			rst_initialization_flag = end_condition_met;
-			
-			// set dut_busy flag
-			// dut_busy_toggle = end_condition_met ? high : low;
 		end
 		
 		S3: begin
@@ -334,9 +269,7 @@ begin
 			pln_input_row_enable = high;
 		end
 		
-		S6: begin
-			
-		end
+		S6: begin end
 		
 		S7: begin
 			// update registers for data input of convolution modules
@@ -364,17 +297,8 @@ begin
 		end
 		
 		S9: begin
-			/* // update registers for data input of convolution modules
-			update_d_in = high;
-			
-			// increment column index for next d_in
-			incr_col_enable = high; */
-			
-			// incr_row_enable = last_row_flag ? low : high;
+			// increment row index for next d_in
 			incr_row_enable = high;
-			
-			/* // increment read address
-			incr_raddr_enable = high; */
 			
 			// reset column counter
 			rst_col_counter = high;
@@ -386,8 +310,6 @@ begin
 		SA: begin
 			// read in next row and pipeline the rest
 			pln_input_row_enable = high;
-			// // write row here
-			// str_temp_to_write = high;
 		end
 		
 		SB: begin
@@ -402,8 +324,6 @@ begin
 			rst_row_counter = high;
 			// 
 			rst_dut_wmem_read_address = high;
-			// 
-			// incr_waddr_enable = high;
 		end
 		
 		SD: begin
@@ -411,20 +331,11 @@ begin
 			dut_busy_toggle = high;
 		end
 		
-		default: begin
-			// next state			
-			// next_state = S0;
-		end
+		default: begin end
 	endcase
 end
 
 // return same state indicator 
 assign same_state_flag = (current_state == next_state) ? ~p_same_state_flag : p_same_state_flag;
-
-// ADD THESE TO DATAPATH, INPUT TO CONTROLLER ?
-
-// row and column out-of-bounds flags
-// assign last_row_flag = ((ridx_counter + incr) == input_num_rows);
-// assign last_col_next = (cidx_counter == input_num_cols);
 
 endmodule
