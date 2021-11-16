@@ -24,7 +24,7 @@ module controller (	dut_run,
 					dut_busy_toggle,
 					
 					set_initialization_flag,
-					reset_initialization_flag,
+					rst_initialization_flag,
 					
 					incr_col_enable,
 					incr_row_enable,
@@ -103,7 +103,7 @@ input last_row_flag;
 output reg dut_busy_toggle;
 
 output reg set_initialization_flag;
-output reg reset_initialization_flag;
+output reg rst_initialization_flag;
 
 output reg incr_col_enable;
 output reg incr_row_enable;
@@ -239,7 +239,7 @@ begin
 	dut_busy_toggle = low;
 	
 	set_initialization_flag = low;
-	reset_initialization_flag = low;
+	rst_initialization_flag = low;
 	
 	incr_col_enable = low;
 	incr_row_enable = low;
@@ -308,7 +308,7 @@ begin
 			str_weights_data = high;
 			
 			// reset initializing flag if end
-			reset_initialization_flag = end_condition_met;
+			rst_initialization_flag = end_condition_met;
 			
 			// set dut_busy flag
 			// dut_busy_toggle = end_condition_met ? high : low;
@@ -392,7 +392,7 @@ begin
 		
 		SB: begin
 			// reset initializing flag, running
-			reset_initialization_flag = high;
+			rst_initialization_flag = high;
 		end
 		
 		SC: begin

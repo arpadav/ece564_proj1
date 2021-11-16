@@ -16,7 +16,7 @@ module datapath (	//dut_run,
 					dut_busy_toggle,
 					
 					set_initialization_flag,
-					reset_initialization_flag,
+					rst_initialization_flag,
 					
 					incr_col_enable,
 					incr_row_enable,
@@ -106,7 +106,7 @@ output wire dut_sram_write_enable;
 input dut_busy_toggle;
 
 input set_initialization_flag;
-input reset_initialization_flag;
+input rst_initialization_flag;
 
 input incr_col_enable;
 input incr_row_enable;
@@ -245,7 +245,7 @@ always@(posedge clk or negedge reset_b)
 
 // Reset, Set WeightMem Read Address
 always@(posedge clk or negedge reset_b)
-	if (!reset_b || !rst_dut_wmem_read_address) dut_wmem_read_address <= addr_init;
+	if (!rst_dut_wmem_read_address) dut_wmem_read_address <= addr_init;
 	else dut_wmem_read_address <= weights_data_addr;
 
 // Reset, Increment SRAM Read Address
@@ -394,7 +394,7 @@ always@(posedge clk or negedge reset_b)
 	
 // Initialization Flag
 always@(posedge clk or negedge reset_b)
-	if (!reset_b || reset_initialization_flag) initialization_flag <= low;
+	if (!reset_b || rst_initialization_flag) initialization_flag <= low;
 	else if (set_initialization_flag) initialization_flag <= high;
 // ========== FLAGS / INDICATORS ==========
 // ========== FLAGS / INDICATORS ==========

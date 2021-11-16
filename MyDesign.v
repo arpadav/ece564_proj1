@@ -122,7 +122,7 @@ wire last_col_next;
 wire last_row_flag;
 wire dut_busy_toggle;
 wire set_initialization_flag;
-wire reset_initialization_flag;
+wire rst_initialization_flag;
 wire incr_col_enable;
 wire incr_row_enable;
 wire rst_col_counter;
@@ -323,7 +323,7 @@ controller ctrl (	dut_run,
 					dut_busy_toggle,
 					
 					set_initialization_flag,
-					reset_initialization_flag,
+					rst_initialization_flag,
 					
 					incr_col_enable,
 					incr_row_enable,
@@ -370,7 +370,7 @@ datapath dp (	dut_busy,
 				dut_busy_toggle,
 				
 				set_initialization_flag,
-				reset_initialization_flag,
+				rst_initialization_flag,
 				
 				incr_col_enable,
 				incr_row_enable,
