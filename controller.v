@@ -346,8 +346,8 @@ begin
 			// set convolution flag to high
 			toggle_conv_go_flag = high;
 			
-			// reset initializing flag, running
-			reset_initialization_flag = high;
+			// write row here
+			str_temp_to_write = ~initialization_flag;
 		end
 		
 		S8: begin
@@ -359,9 +359,6 @@ begin
 			
 			// if moving to S9, increment read address 
 			incr_raddr_enable = last_col_next;
-			
-			// write row here
-			str_temp_to_write = ~initialization_flag;
 		end
 		
 		S9: begin
@@ -392,7 +389,8 @@ begin
 		end
 		
 		SB: begin
-			
+			// reset initializing flag, running
+			reset_initialization_flag = high;
 		end
 		
 		SC: begin
