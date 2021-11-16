@@ -23,6 +23,7 @@ module controller (	dut_run,
 					incr_col_enable,
 					incr_row_enable,
 					rst_col_counter,
+					rst_row_counter,
 					
 					incr_raddr_enable,
 					incr_waddr_enable,
@@ -93,6 +94,7 @@ output reg dut_busy_toggle;
 output reg incr_col_enable;
 output reg incr_row_enable;
 output reg rst_col_counter;
+output reg rst_row_counter;
 
 output reg incr_raddr_enable;
 output reg incr_waddr_enable;
@@ -221,6 +223,7 @@ begin
 	incr_col_enable = low;
 	incr_row_enable = low;
 	rst_col_counter = low;
+	rst_row_counter = low;
 	
 	incr_raddr_enable = low;
 	incr_waddr_enable = low;
@@ -356,6 +359,10 @@ begin
 		SB: begin
 			// 
 			rst_output_row_temp = high;
+			// 
+			rst_row_counter = high;
+			// 
+			rst_dut_wmem_read_address = high;
 		end
 		
 		default: begin

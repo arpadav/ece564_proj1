@@ -18,6 +18,7 @@ module datapath (	//dut_run,
 					incr_col_enable,
 					incr_row_enable,
 					rst_col_counter,
+					rst_row_counter,
 					
 					incr_raddr_enable,
 					incr_waddr_enable,
@@ -100,6 +101,7 @@ input dut_busy_toggle;
 input incr_col_enable;
 input incr_row_enable;
 input rst_col_counter;
+input rst_row_counter;
 
 input incr_raddr_enable;
 input incr_waddr_enable;
@@ -324,22 +326,23 @@ always@(posedge clk or negedge reset_b)
 // ========== COUNTERS ==========
 // Column Counter
 always@(posedge clk or negedge reset_b)
-	if (!reset_b) begin 
+	if (!reset_b || rst_col_counter) begin 
 		cidx_counter <= cntr_init;
 		last_col_next <= low;
-	end else begin 
+	end /* else begin 
 		if (rst_col_counter) begin
 			cidx_counter <= cntr_init;
 			last_col_next <= low;
-		end else if (incr_col_enable) begin
-			cidx_counter <= cidx_counter + incr;
-			last_col_next <= input_num_cols == cidx_counter + incr;
-		end
+		end  */
+	else if (incr_col_enable) begin
+		cidx_counter <= cidx_counter + incr;
+		last_col_next <= input_num_cols == cidx_counter + incr;
 	end
+	// end
 
 // Row Counter
 always@(posedge clk or negedge reset_b)
-	if (!reset_b) begin 
+	if (!reset_b || rst_row_counter) begin 
 		ridx_counter <= cntr_init;
 		last_row_flag <= low;
 	end else if (incr_row_enable) begin 
