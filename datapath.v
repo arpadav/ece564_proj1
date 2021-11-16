@@ -368,7 +368,8 @@ always@(posedge clk or negedge reset_b)
 // Initialization Flag
 always@(posedge clk or negedge reset_b)
 	if (!reset_b) initialization_flag <= low;
-	else if (set_initialization_flag) initialization_flag <= ~rst_initialization_flag;
+	else if (rst_initialization_flag) initialization_flag <= low;
+	else if (set_initialization_flag) initialization_flag <= high;
 // ========== FLAGS / INDICATORS ==========
 // ========== FLAGS / INDICATORS ==========
 
