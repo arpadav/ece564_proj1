@@ -177,7 +177,6 @@ controller ctrl (	// top + mem
 
 // datapath
 datapath dp (	// top + mem
-				.dut_run(dut_run),
 				.reset_b(reset_b),
 				.clk(clk),
 				.dut_sram_write_address(dut_sram_write_address),
@@ -207,7 +206,7 @@ datapath dp (	// top + mem
 				.str_temp_to_write(str_temp_to_write),
 				.update_d_in(update_d_in),
 				.toggle_conv_go_flag(toggle_conv_go_flag),
-				.rst_output_row_temp(rst_output_row_temp)
+				.rst_output_row_temp(rst_output_row_temp),
 				.p_writ_idx(c00_out),
 				.s1_ones(s1_ones),
 				.s1_twos(s1_twos),
@@ -608,7 +607,6 @@ endmodule
 
 // ece564 - project 1 - Arpad Voros
 module datapath (	// top + mem
-					dut_busy,
 					reset_b,
 					clk,
 					dut_sram_write_address,
@@ -661,9 +659,6 @@ module datapath (	// top + mem
 
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
-// busy flag
-output reg dut_busy;
-
 // reset and clock
 input reset_b;
 input clk;
