@@ -1,15 +1,16 @@
 // ece564 - project 1 - Arpad Voros
-module conv_module (clock,
+module conv_module (// top
+					clock,
 					reset,
+					// inputs (logic, data)
 					go,
 					load_weight,
 					weight_in,
 					data_in,
 					pipeline_idx_enable,
-					// write_addr_in,
 					idx_in,
+					// outputs (data, idx, result)
 					data_out,
-					// write_addr_out,
 					idx_out,
 					negative_flag
 					);
@@ -22,34 +23,36 @@ module conv_module (clock,
 
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
+// top inputs
 input clock;
 input reset;
-input go;
 
+// inputs (logic, data)
+input go;
 input load_weight;
 input weight_in;
-
 input data_in;
 input pipeline_idx_enable;
-// input [11:0] write_addr_in;
 input [3:0] idx_in;
 
+// outputs (data, idx, result)
 output reg data_out;
-// output reg [11:0] write_addr_out;
 output reg [3:0] idx_out;
-
 output wire negative_flag;
-// ========== IO INTERFACE ==========
-// ========== IO INTERFACE ==========
 
+
+// ========== LOCAL REGISTERS ==========
+// ========== LOCAL REGISTERS ==========
 reg weight;
 
+
+// ========== FLIP-FLOPS ==========
+// ========== FLIP-FLOPS ==========
 always@(posedge clock)
 begin
 	// active low reset
 	if (!reset) begin
 		// reset input indicies
-		// write_addr_out <= 4'b0;
 		idx_out <= 4'b0;
 		// reset weight to 0 (negative)
 		weight <= 1'b0;
@@ -57,11 +60,10 @@ begin
 		data_out <= 1'b0;
 	end else begin
 		if (go) begin
-			// start passing values every clockcycle
+			// pipelines data
 			data_out <= data_in;
 			if (pipeline_idx_enable) begin
 				// pass index forward
-				// write_addr_out <= write_addr_in;
 				idx_out <= idx_in;
 			end
 		end
@@ -72,6 +74,8 @@ begin
 	end
 end
 
+// ========== WIRES ==========
+// ========== WIRES ==========
 // multiplication of weight and data. 1 if negative, 0 if positive
 assign negative_flag = weight ^ data_out;
 

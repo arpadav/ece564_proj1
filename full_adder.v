@@ -12,8 +12,6 @@ input Cin;
 // sum and carry out
 output S;
 output Cout;
-// ========== IO INTERFACE ==========
-// ========== IO INTERFACE ==========
 
 
 // ========== WIRES ==========
@@ -22,11 +20,10 @@ output Cout;
 wire ab_xor;
 wire S;
 wire Cout;
+
 // logic
 assign ab_xor = A ^ B;
 assign S = ab_xor ^ Cin;
 assign Cout = (A & B) | (ab_xor & Cin);
-// ========== WIRES ==========
-// ========== WIRES ==========
 
 endmodule

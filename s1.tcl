@@ -5,7 +5,7 @@ set clkname clk
 set modname MyDesign
 
 # set variable "RTL_DIR" to the HDL directory w.r.t synthesis directory
-set RTL_DIR    ../
+set RTL_DIR    ../v
 
 # set variable "type" to a name that distinguishes this synthesis run
 set type proj1
@@ -37,10 +37,6 @@ set CLK_PER 3
 #---------------------------------------------------------
 
 read_verilog $RTL_DIR/MyDesign.v
-read_verilog $RTL_DIR/controller.v
-read_verilog $RTL_DIR/datapath.v
-read_verilog $RTL_DIR/conv_module.v
-read_verilog $RTL_DIR/full_adder.v
 
 #---------------------------------------------------------
 # Our first Optimization 'compile' is intended to      
