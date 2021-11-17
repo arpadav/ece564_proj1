@@ -177,6 +177,7 @@ controller ctrl (	// top + mem
 
 // datapath
 datapath dp (	// top + mem
+				.dut_busy(dut_busy),
 				.reset_b(reset_b),
 				.clk(clk),
 				.dut_sram_write_address(dut_sram_write_address),

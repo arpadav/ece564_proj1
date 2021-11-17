@@ -177,6 +177,7 @@ controller ctrl (	// top + mem
 
 // datapath
 datapath dp (	// top + mem
+				.dut_busy(dut_busy),
 				.reset_b(reset_b),
 				.clk(clk),
 				.dut_sram_write_address(dut_sram_write_address),
@@ -607,6 +608,7 @@ endmodule
 
 // ece564 - project 1 - Arpad Voros
 module datapath (	// top + mem
+					dut_busy,
 					reset_b,
 					clk,
 					dut_sram_write_address,
@@ -659,6 +661,9 @@ module datapath (	// top + mem
 
 // ========== IO INTERFACE ==========
 // ========== IO INTERFACE ==========
+// busy flag
+output reg dut_busy;
+
 // reset and clock
 input reset_b;
 input clk;
