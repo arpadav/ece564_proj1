@@ -87,19 +87,19 @@ check_design
  set link_library   NangateOpenCellLibrary_PDKv1_2_v2008_10_slow_nldm.db
  set link_library   [concat  $link_library dw_foundation.sldb]
  translate
- report_timing  > timing_max_slow_${type}.rpt
- report_timing -delay min  > timing_min_slow_${type}.rpt
+ report_timing  > timing_max_slow_holdfixed_${type}.rpt
+# report_timing -delay min  > timing_min_slow_holdfixed_${type}.rpt
 
 #---------------------------------------------------------
 # Sanity checks to see if the libraries are characterized 
 # correctly    
 #---------------------------------------------------------
- set target_library NangateOpenCellLibrary_PDKv1_2_v2008_10_fast_nldm.db
- set link_library   NangateOpenCellLibrary_PDKv1_2_v2008_10_fast_nldm.db
- set link_library   [concat  $link_library dw_foundation.sldb]
- translate
- report_timing  > timing_max_fast_${type}.rpt
- report_timing -delay min  > timing_min_fast_${type}.rpt
+# set target_library NangateOpenCellLibrary_PDKv1_2_v2008_10_fast_nldm.db
+# set link_library   NangateOpenCellLibrary_PDKv1_2_v2008_10_fast_nldm.db
+# set link_library   [concat  $link_library dw_foundation.sldb]
+# translate
+# report_timing  > timing_max_fast_holdfixed_${type}.rpt
+# report_timing -delay min  > timing_min_fast_holdfixed_${type}.rpt
 
 # set target_library NangateOpenCellLibrary_PDKv1_2_v2008_10_typical_nldm.db
 # set link_library   NangateOpenCellLibrary_PDKv1_2_v2008_10_typical_nldm.db
